@@ -1,0 +1,6 @@
+[
+  { "name": "Code",        "type": "STRING", "mode": "NULLABLE", "description": "BTS airline numeric code" },
+  { "name": "Description", "type": "STRING", "mode": "NULLABLE", "description": "Full airline name" },
+  { "name": "_loaded_at",  "type": "TIMESTAMP", "mode": "NULLABLE", "description": "Load timestamp" },
+  { "name": "_source_file","type": "STRING", "mode": "NULLABLE", "description": "Source filename" }
+]

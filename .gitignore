@@ -1,0 +1,32 @@
+# Data files (terlalu besar untuk Git)
+data/raw/
+*.csv
+*.parquet
+
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
+
+# dbt
+dbt/us_aviation/target/
+dbt/us_aviation/dbt_packages/
+dbt/us_aviation/logs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# BigQuery logs
+bigquery/logs/
+
+# Google Cloud credentials
+*.json
+!bigquery/schema/*.json
+service-account*.json
+credentials*.json
+application_default_credentials.json
