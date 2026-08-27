@@ -37,9 +37,9 @@ echo "      Clustering   : reporting_airline, origin, dest"
 bq mk \
   --table \
   --description="BTS Airline On-Time Performance data 2019-2023. One row = one scheduled flight segment. Partitioned by flight_date, clustered by reporting_airline/origin/dest." \
-  --time_partitioning_field="FlightDate" \
+  --time_partitioning_field="FL_DATE" \
   --time_partitioning_type="DAY" \
-  --clustering_fields="Reporting_Airline,Origin,Dest" \
+  --clustering_fields="OP_UNIQUE_CARRIER,ORIGIN,DEST" \
   --schema="$SCHEMA_DIR/on_time_performance.json" \
   "$PROJECT_ID:$DATASET.on_time_performance"
 

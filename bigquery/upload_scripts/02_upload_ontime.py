@@ -18,7 +18,7 @@ DATASET_ID   = "raw"
 TABLE_ID     = "on_time_performance"
 RAW_PATH     = "data/raw/on_time/"
 LOG_PATH     = "bigquery/logs/"
-YEARS        = range(2019, 2024)
+YEARS        = range(2019, 2020)
 
 # Logging Setup
 os.makedirs(LOG_PATH, exist_ok=True)
@@ -93,9 +93,9 @@ EXPECTED_COLS = [
     'CRS_DEP_TIME',
     'DEP_TIME',
     'DEP_DELAY',
-    'DEP_DELAY_MINUTES',
+    'DEP_DELAY_NEW',
     'DEP_DEL15',
-    'DEP_DELAY_GROUPS',
+    'DEP_DELAY_GROUP',
     'TAXI_OUT',
     'WHEELS_OFF',
     'WHEELS_ON',
@@ -104,9 +104,9 @@ EXPECTED_COLS = [
     'CRS_ARR_TIME',
     'ARR_TIME',
     'ARR_DELAY',
-    'ARR_DELAY_MINUTES',
+    'ARR_DELAY_NEW',
     'ARR_DEL15',
-    'ARR_DELAY_GROUPS',
+    'ARR_DELAY_GROUP',
 
     'CANCELLED',
     'CANCELLATION_CODE',
@@ -139,9 +139,14 @@ def load_csv_to_dataframe(filepath: str) -> pd.DataFrame:
     df = pd.read_csv(
         filepath,
         dtype=DTYPE_MAP,
-        parse_dates=['FL_DATE'],
         low_memory=False
     )
+
+    # BTS exports FL_DATE as "M/D/YYYY 12:00:00 AM" — parse with mixed
+    # format inference, then cast to date only (no time component)
+    df['FL_DATE'] = pd.to_datetime(
+        df['FL_DATE'], format='mixed', dayfirst=False
+    ).dt.date
 
     # Remove BTS trailing empty column (they sometimes add one)
     df = df.loc[:, ~df.columns.str.startswith('Unnamed')]
@@ -187,14 +192,8 @@ def upload_dataframe_to_bigquery(
     query = f"""
         SELECT COUNT(*) as row_count
         FROM `{table_ref}`
-        WHERE FL_DATE BETWEEN '{year}-{month:02d}-01'
-          AND DATE_TRUNC(
-                DATE_ADD(
-                    DATE('{year}-{month:02d}-01'),
-                    INTERVAL 1 MONTH
-                ),
-                MONTH
-              ) - INTERVAL 1 DAY
+        WHERE EXTRACT(YEAR  FROM FL_DATE) = {year}
+        AND EXTRACT(MONTH FROM FL_DATE) = {month}
     """
 
     result = client.query(query).result()
@@ -242,6 +241,21 @@ def save_log(log_records: list):
 
     return log_file
 
+def check_existing_rows(
+    client: bigquery.Client,
+    table_ref: str,
+    year: int,
+    month: int
+) -> int:
+    """Cek apakah partisi bulan ini sudah ada datanya di BQ."""
+    query = f"""
+        SELECT COUNT(*) as row_count
+        FROM `{table_ref}`
+        WHERE EXTRACT(YEAR  FROM FL_DATE) = {year}
+          AND EXTRACT(MONTH FROM FL_DATE) = {month}
+    """
+    result = client.query(query).result()
+    return list(result)[0].row_count
 
 def main():
     logger.info("=" * 65)
@@ -304,6 +318,15 @@ def main():
     ):
 
         filename = os.path.basename(filepath)
+
+        existing = check_existing_rows(client, table_ref, year, month)
+        if existing > 0:
+            logger.warning(
+                f"SKIPPED: {filename} - "
+                f"partisi {year}-{month:02d} sudah ada "
+                f"{existing:,} rows. Delete manual dulu."
+            )
+            continue
 
         logger.info(
             f"Processing: {filename}"

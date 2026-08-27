@@ -36,12 +36,19 @@ LOOKUPS = [
     }
 ]
 
+def read_csv_with_fallback(filepath, dtypes):
+    """Read CSV with UTF-8 first, fall back to latin-1 on encoding errors."""
+    try:
+        return pd.read_csv(filepath, dtype=dtypes, encoding="utf-8")
+    except UnicodeDecodeError:
+        logger.warning(f"UTF-8 failed for {os.path.basename(filepath)}, retrying with latin-1")
+        return pd.read_csv(filepath, dtype=dtypes, encoding="latin-1")
 
 def upload_lookup(client, filepath, table_id, columns, dtypes, desc):
     """Upload a lookup CSV to BigQuery, replacing existing data."""
     loaded_at = datetime.now(timezone.utc)
 
-    df = pd.read_csv(filepath, dtype=dtypes)
+    df = read_csv_with_fallback(filepath, dtypes) 
 
     df = df[[c for c in columns if c in df.columns]]
     df['_loaded_at']   = loaded_at
