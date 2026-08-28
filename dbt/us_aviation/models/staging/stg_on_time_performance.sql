@@ -27,6 +27,7 @@ renamed as (
         -- Waktu
         cast(FL_DATE as DATE) as flight_date,
         cast(YEAR as INT64) as flight_year,
+        cast(QUARTER as INT64) as flight_quarter,
         cast(MONTH as INT64) as flight_month,
         cast(DAY_OF_MONTH as INT64) as flight_day_of_month,
         cast(DAY_OF_WEEK as INT64) as flight_day_of_week,
@@ -62,7 +63,7 @@ renamed as (
         cast(CRS_DEP_TIME as INT64) as scheduled_dep_time_hhmm,
         cast(DEP_TIME as FLOAT64) as dep_time_hhmm,
         cast(DEP_DELAY as FLOAT64) as dep_delay_minutes,
-        cast(DEP_DELAY_MINUTES as FLOAT64) as dep_delay_minutes_pos,
+        cast(DEP_DELAY_NEW as FLOAT64) as dep_delay_minutes_pos,
         cast(DEP_DEL15 as FLOAT64) = 1 as is_dep_delayed,
         cast(TAXI_OUT as FLOAT64) as taxi_out_minutes,
         cast(WHEELS_OFF as FLOAT64) as wheels_off_time_hhmm,
@@ -90,14 +91,14 @@ renamed as (
         cast(CANCELLATION_CODE as STRING) as cancellation_code,
 
         case cast(CANCELLATION_CODE as STRING)
-            when 'A' then 'Carrier',
-            when 'B' then 'Weather',
+            when 'A' then 'Carrier'
+            when 'B' then 'Weather'
             when 'C' then 'National Air System'
             when 'D' then 'Security'
             else null -- berarti tidak dibatalkan
         end as cancellation_reason,
 
-        -- Durasi Penerabangan
+        -- Durasi Penerbangan
         cast(CRS_ELAPSED_TIME as FLOAT64) as scheduled_elapsed_minutes,
         cast(ACTUAL_ELAPSED_TIME as FLOAT64) as actual_elapsed_minutes,
         cast(AIR_TIME as FLOAT64) as air_time_minutes,
@@ -122,6 +123,7 @@ renamed as (
         -- Metadata
         cast(_loaded_at as TIMESTAMP) as loaded_at,
         cast(_source_file as STRING) as source_file
+    from source
 ), 
 
 final as (
@@ -130,11 +132,3 @@ final as (
 )
 
 select * from final
-
-
-
-
-
-
-
-)

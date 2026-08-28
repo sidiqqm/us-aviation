@@ -1,0 +1,256 @@
+version: 2
+
+models:
+
+  # stg_on_time_performance
+  - name: stg_on_time_performance
+    description: >
+      Staging model untuk BTS On-Time Performance data 2019–2023.
+      Grain: satu baris = satu scheduled flight segment (non-diverted).
+      Transformasi: rename ke snake_case, cast types, surrogate key,
+      boolean flags, cancellation reason mapping.
+      Diverted flights dikecualikan dari model ini.
+
+    columns:
+
+      # Primary Key
+      - name: flight_id
+        description: >
+          Surrogate key — MD5 hash dari (flight_date, carrier_code,
+          flight_number, origin_airport_code, dest_airport_code).
+          Deterministic dan idempotent.
+        tests:
+          - unique
+          - not_null
+
+      # Dimensi Waktu
+      - name: flight_date
+        description: Tanggal penerbangan dalam format DATE
+        tests:
+          - not_null
+
+      - name: flight_year
+        description: Tahun penerbangan (2019–2023)
+        tests:
+          - not_null
+          - accepted_values:
+              values: [2019, 2020, 2021, 2022, 2023]
+
+      - name: flight_quarter
+        description: Kuartal penerbangan (1–4)
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4]
+
+      - name: flight_month
+        description: Bulan penerbangan (1–12)
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+      - name: flight_day_of_week
+        description: Hari dalam seminggu (1=Senin, 7=Minggu)
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4, 5, 6, 7]
+
+      - name: day_of_week_name
+        description: Nama hari dalam bahasa Inggris
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                       'Friday', 'Saturday', 'Sunday']
+
+      # Identifikasi Penerbangan
+      - name: carrier_code
+        description: Kode IATA maskapai (2 karakter)
+        tests:
+          - not_null
+
+      - name: flight_number
+        description: Nomor penerbangan
+        tests:
+          - not_null
+
+      # Rute
+      - name: origin_airport_code
+        description: Kode IATA bandara asal (3 karakter)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_airport_lookup')
+              field: airport_code
+              # Severity warning karena ada airport kecil
+              # yang mungkin tidak ada di lookup table
+              severity: warn
+
+      - name: dest_airport_code
+        description: Kode IATA bandara tujuan (3 karakter)
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_airport_lookup')
+              field: airport_code
+              severity: warn
+
+      - name: origin_state_code
+        description: Kode negara bagian asal (2 karakter)
+        tests:
+          - not_null
+
+      - name: dest_state_code
+        description: Kode negara bagian tujuan (2 karakter)
+        tests:
+          - not_null
+
+      # Status Flags
+      - name: is_cancelled
+        description: True jika penerbangan dibatalkan
+        tests:
+          - not_null
+
+      - name: is_diverted
+        description: >
+          Selalu False di model ini karena diverted flights
+          dikecualikan dari staging.
+        tests:
+          - not_null
+          - accepted_values:
+              values: [false]
+
+      - name: is_on_time
+        description: >
+          True = tiba ≤ 15 menit dari jadwal.
+          False = tiba > 15 menit dari jadwal.
+          NULL = penerbangan dibatalkan (tidak applicable).
+        # Tidak test not_null karena NULL valid untuk cancelled
+
+      - name: is_arr_delayed
+        description: >
+          True jika ArrDelay > 15 menit (DOT standard).
+          NULL untuk cancelled flights.
+
+      - name: cancellation_code
+        description: Kode penyebab pembatalan (A/B/C/D). NULL jika tidak dibatalkan.
+        tests:
+          - accepted_values:
+              values: ['A', 'B', 'C', 'D', null]
+
+      - name: cancellation_reason
+        description: >
+          Deskripsi penyebab pembatalan:
+          Carrier, Weather, National Air System, Security.
+          NULL jika tidak dibatalkan.
+        tests:
+          - accepted_values:
+              values: ['Carrier', 'Weather', 'National Air System',
+                       'Security', null]
+
+      # Delay Metrics
+      - name: arr_delay_minutes
+        description: >
+          Menit keterlambatan kedatangan.
+          Nilai negatif = early arrival (valid, jangan dihapus).
+          NULL untuk cancelled flights.
+
+      - name: carrier_delay_minutes
+        description: >
+          Menit delay akibat maskapai.
+          NULL jika penerbangan on-time atau cancelled (MAR by design).
+
+      - name: weather_delay_minutes
+        description: >
+          Menit delay akibat cuaca.
+          NULL jika penerbangan on-time atau cancelled (MAR by design).
+
+      - name: nas_delay_minutes
+        description: >
+          Menit delay akibat National Air System.
+          NULL jika penerbangan on-time atau cancelled (MAR by design).
+
+      - name: security_delay_minutes
+        description: >
+          Menit delay akibat keamanan.
+          NULL jika penerbangan on-time atau cancelled (MAR by design).
+
+      - name: late_aircraft_delay_minutes
+        description: >
+          Menit delay akibat pesawat terlambat dari flight sebelumnya.
+          NULL jika penerbangan on-time atau cancelled (MAR by design).
+
+      # Metadata
+      - name: loaded_at
+        description: Timestamp saat baris di-load ke BigQuery raw layer
+        tests:
+          - not_null
+
+      - name: source_file
+        description: "Nama file CSV sumber (contoh: ontime_2019_01.csv)"
+        tests:
+          - not_null
+
+  # stg_airline_lookup
+  - name: stg_airline_lookup
+    description: >
+      Lookup table maskapai — kode IATA ke nama lengkap dan kategori.
+      Grain: satu baris = satu kode maskapai unik.
+      Deduplicated menggunakan window function.
+
+    columns:
+      - name: carrier_code
+        description: Kode IATA maskapai (2 karakter)
+        tests:
+          - unique
+          - not_null
+
+      - name: airline_name_full
+        description: Nama maskapai lengkap dari BTS
+        tests:
+          - not_null
+
+      - name: airline_name_short
+        description: Nama maskapai pendek (tanpa sufiks legal)
+
+      - name: carrier_type
+        description: Kategori maskapai berdasarkan model bisnis
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Legacy', 'Low-Cost', 'Mid-Size',
+                       'Ultra Low-Cost', 'Regional', 'Other']
+
+  # stg_airport_lookup
+  - name: stg_airport_lookup
+    description: >
+      Lookup table bandara — kode IATA ke nama, kota, negara bagian.
+      Grain: satu baris = satu kode bandara unik.
+
+    columns:
+      - name: airport_code
+        description: Kode IATA bandara (3 karakter)
+        tests:
+          - unique
+          - not_null
+
+      - name: airport_description_full
+        description: Deskripsi lengkap dari BTS
+
+      - name: city_name
+        description: Nama kota (hasil parse dari Description)
+        tests:
+          - not_null
+
+      - name: state_code
+        description: Kode negara bagian 2 karakter (hasil parse)
+
+      - name: airport_name
+        description: Nama resmi bandara (hasil parse setelah ':')
+
+      - name: is_major_hub
+        description: True jika termasuk 30 bandara tersibuk di AS
+        tests:
+          - not_null

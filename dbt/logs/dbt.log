@@ -78,3 +78,25 @@ Happy modeling!
 [0m22:49:09.087745 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000002368A1EC9D0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000002369DE6B890>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000002369DD94270>]}
 [0m22:49:09.088181 [debug] [MainThread]: Flushing usage events
 [0m22:49:10.295471 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m17:40:23.631850 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001ED2DEAE510>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001ED2B80CF50>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001ED307D3890>]}
+
+
+============================== 17:40:23.636091 | 1f4f4399-c5c2-4f69-b344-df4d234d3465 ==============================
+[0m17:40:23.636091 [info ] [MainThread]: Running with dbt=1.12.3
+[0m17:40:23.637019 [debug] [MainThread]: running dbt with arguments {'static_parser': 'True', 'no_print': 'None', 'maximum_seed_size_mib': '1', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'version_check': 'True', 'target_path': 'None', 'printer_width': '80', 'write_json': 'True', 'introspect': 'True', 'log_cache_events': 'False', 'empty': 'None', 'cache_selected_only': 'False', 'fail_fast': 'False', 'debug': 'False', 'log_format': 'default', 'partial_parse': 'True', 'send_anonymous_usage_stats': 'True', 'quiet': 'False', 'warn_error': 'None', 'profiles_dir': 'C:\\Users\\LENOVO\\.dbt', 'use_colors': 'True', 'hints_enabled': 'True', 'invocation_command': 'dbt deps', 'use_experimental_parser': 'False', 'indirect_selection': 'eager', 'log_path': 'D:\\App\\us-aviation-analytics\\dbt\\logs'}
+[0m17:40:23.793968 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'project_id', 'label': '1f4f4399-c5c2-4f69-b344-df4d234d3465', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001ED3075D5B0>]}
+[0m17:40:23.818892 [debug] [MainThread]: Set downloads directory='C:\Users\LENOVO\AppData\Local\Temp\dbt-downloads-r2st_cnv'
+[0m17:40:23.819838 [debug] [MainThread]: Making package index registry request: GET https://hub.getdbt.com/api/v1/index.json
+[0m17:40:25.605096 [debug] [MainThread]: Response from registry index: GET https://hub.getdbt.com/api/v1/index.json 200
+[0m17:40:25.608391 [debug] [MainThread]: Making package registry request: GET https://hub.getdbt.com/api/v1/dbt-labs/dbt_utils.json
+[0m17:40:26.029536 [debug] [MainThread]: Response from registry: GET https://hub.getdbt.com/api/v1/dbt-labs/dbt_utils.json 200
+[0m17:40:26.059518 [info ] [MainThread]: Updating lock file in file path: D:\App\us-aviation-analytics\dbt/package-lock.yml
+[0m17:40:26.072307 [debug] [MainThread]: Set downloads directory='C:\Users\LENOVO\AppData\Local\Temp\dbt-downloads-i6bq5nil'
+[0m17:40:26.077072 [info ] [MainThread]: Installing dbt-labs/dbt_utils
+[0m17:40:28.918283 [info ] [MainThread]: Installed from version 1.4.1
+[0m17:40:28.918919 [info ] [MainThread]: Up to date!
+[0m17:40:28.919408 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'package', 'label': '1f4f4399-c5c2-4f69-b344-df4d234d3465', 'property_': 'install', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001ED2EB05370>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001ED30971040>]}
+[0m17:40:28.921850 [debug] [MainThread]: Command `dbt deps` succeeded at 17:40:28.921375 after 5.45 seconds
+[0m17:40:28.922514 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001ED30B01D50>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001ED309DC8C0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001ED309DC9B0>]}
+[0m17:40:28.922899 [debug] [MainThread]: Flushing usage events
+[0m17:40:30.534263 [debug] [MainThread]: An error was encountered while trying to flush usage events
