@@ -77,7 +77,60 @@ renamed as (
         cast(ARR_DEL15 as FLOAT64) = 1 as is_arr_delayed,
 
         -- Status Flags
-        
+        cast(CANCELLED as FLOAT64) = 1 as is_cancelled,
+        cast(DIVERTED as FLOAT64) = 1 as is_diverted,
+
+        -- Derived : Ontime = tidak cancelled dan tidak delayed
+        case
+            when cast(CANCELLED as FLOAT64) = 1 then null
+            when cast(ARR_DEL15 as FLOAT64) = 0 then true
+            when cast(ARR_DEL15 as FLOAT64) = 1 then false
+        end as is_on_time,
+
+        cast(CANCELLATION_CODE as STRING) as cancellation_code,
+
+        case cast(CANCELLATION_CODE as STRING)
+            when 'A' then 'Carrier',
+            when 'B' then 'Weather',
+            when 'C' then 'National Air System'
+            when 'D' then 'Security'
+            else null -- berarti tidak dibatalkan
+        end as cancellation_reason,
+
+        -- Durasi Penerabangan
+        cast(CRS_ELAPSED_TIME as FLOAT64) as scheduled_elapsed_minutes,
+        cast(ACTUAL_ELAPSED_TIME as FLOAT64) as actual_elapsed_minutes,
+        cast(AIR_TIME as FLOAT64) as air_time_minutes,
+        cast(DISTANCE as FLOAT64) as distance_miles,
+        cast(DISTANCE_GROUP as INT64) as distance_group,
+
+        -- Penyebab Delay
+        cast(CARRIER_DELAY as FLOAT64) as carrier_delay_minutes,
+        cast(WEATHER_DELAY as FLOAT64) as weather_delay_minutes,
+        cast(NAS_DELAY as FLOAT64) as nas_delay_minutes,
+        cast(SECURITY_DELAY as FLOAT64) as security_delay_minutes,
+        cast(LATE_AIRCRAFT_DELAY as FLOAT64) as late_aircraft_delay_minutes,
+
+        -- Total Delay
+        coalesce(cast(CARRIER_DELAY as FLOAT64), 0)
+        + coalesce(cast(WEATHER_DELAY as FLOAT64), 0)
+        + coalesce(cast(NAS_DELAY as FLOAT64), 0)
+        + coalesce(cast(SECURITY_DELAY as FLOAT64), 0)
+        + coalesce(cast(LATE_AIRCRAFT_DELAY as FLOAT64), 0)
+        as total_cause_minutes,
+
+        -- Metadata
+        cast(_loaded_at as TIMESTAMP) as loaded_at,
+        cast(_source_file as STRING) as source_file
+), 
+
+final as (
+    select * from renamed
+    where is_diverted = false
+)
+
+select * from final
+
 
 
 
