@@ -56,7 +56,7 @@ classified as (
         -- Delay Cause percentage
         round(
             {{safe_divide(
-                'coalesce(carrier_delay_minutes, 0),',
+                'coalesce(carrier_delay_minutes, 0)',
                 'total_cause_minutes'
             )}} * 100, 2
         ) as carrier_delay_pct,
@@ -133,7 +133,7 @@ classified as (
         arr_delay_minutes_pos > 120 as is_over_2_hours,
         arr_delay_minutes_pos > 240 as is_over_4_hours,
 
-        coalesce(late_aircraft_delay_minutes, 0) > 15 as is_cascade_delay
+        coalesce(late_aircraft_delay_minutes, 0) > 15 as is_cascade_delay,
 
         loaded_at,
         source_file

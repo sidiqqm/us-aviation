@@ -61,7 +61,7 @@ renamed as (
 
         -- Jadwal Keberangkatan
         cast(CRS_DEP_TIME as INT64) as scheduled_dep_time_hhmm,
-        cast(DEP_TIME as FLOAT64) as dep_time_hhmm,
+        cast(DEP_TIME as FLOAT64) as actual_dep_time_hhmm,
         cast(DEP_DELAY as FLOAT64) as dep_delay_minutes,
         cast(DEP_DELAY_NEW as FLOAT64) as dep_delay_minutes_pos,
         cast(DEP_DEL15 as FLOAT64) = 1 as is_dep_delayed,

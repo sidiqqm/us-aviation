@@ -12,7 +12,7 @@ with flights as (
     from {{ ref('int_flights_enriched') }}
 
     where not is_cancelled
-)
+),
 
 -- Agregasi bulanan per rute
 monthly_route as (
@@ -38,18 +38,17 @@ monthly_route as (
         route_distance_category,
 
         count(*) as total_operated_flights,
-        count(is_arr_delayed) as delayed_flights,
-        count(is_on_time) as on_time_flights,
+        countif(is_arr_delayed) as delayed_flights,
+        countif(is_on_time) as on_time_flights,
 
         round(
             {{
                 safe_divide(
                     'countif(is_on_time)',
-                    'total_operated_flights'
+                    'count(*)'
                 )
             }} * 100, 2
-        ) as otp_rate_pct
-
+        ) as otp_rate_pct,
 
         -- Delay metrics
         round(avg(arr_delay_minutes), 2) as avg_arr_delay_all,
@@ -62,7 +61,7 @@ monthly_route as (
         
         round(max(arr_delay_minutes), 2) as max_arr_delay,
 
-        approx_quantile(arr_delay_minutes, 100)[offset(50)] as median_arr_delay,
+        approx_quantiles(arr_delay_minutes, 100)[offset(50)] as median_arr_delay,
 
         -- Delay total (minutes)
         round(sum(coalesce(carrier_delay_minutes, 0)), 0) as total_carrier_delay_min,
@@ -93,7 +92,7 @@ monthly_route as (
         dest_state_code,
         origin_is_major_hub,
         dest_is_major_hub,
-        route_distance_category,
+        route_distance_category
 ),
 
 with_windows as (
@@ -124,12 +123,12 @@ with_windows as (
 
         (otp_rate_pct < 70 and total_operated_flights >= 30) as is_below_chronic_threshold,
 
-        lag(otp_rate_pct < 70 and total_operated_flights, 1) over(
+        lag(otp_rate_pct < 70 and total_operated_flights >= 30, 1) over(
             partition by carrier_code, route_key
             order by flight_year, flight_month
         ) as prev_month_below_threshold,
 
-        lag(otp_rate_pct < 70 and total_operated_flights >= 30) over(
+        lag(otp_rate_pct < 70 and total_operated_flights >= 30, 2) over(
             partition by carrier_code, route_key
             order by flight_year, flight_month
         ) as prev2_month_below_threshold
@@ -150,11 +149,11 @@ with_dominant as (
     from with_windows
 ),
 
-with final as (
+final as (
     select
         *,
         (
-            otp_rate_pct
+            is_below_chronic_threshold
             and coalesce(prev_month_below_threshold, false)
             and coalesce(prev2_month_below_threshold, false)
         ) as is_chronic_delay_route,
@@ -173,11 +172,13 @@ with final as (
         case
             when total_delay_minutes = 0 then 'No Delay'
             when total_carrier_delay_min = max_cause_delay_min then 'Carrier'
+            when total_late_aircraft_delay_min = max_cause_delay_min then 'Late Aircraft'
+            when total_nas_delay_min = max_cause_delay_min then 'NAS'
             when total_weather_delay_min = max_cause_delay_min then 'Weather'
-            when total_nas_delay_min = max_cause_delay_min then 'Weather'
-            when total_security_delay_min = max_cause_delay_min then 'Weather'
-            when total_late_aircraft_delay_min = max_cause_delay_min then 'Weather'
-            else 'Unknown'
+            when total_security_delay_min = max_cause_delay_min then 'Security'
+else 'Unknown'
         end as dominant_delay_cause
     from with_dominant
 )
+
+select * from final

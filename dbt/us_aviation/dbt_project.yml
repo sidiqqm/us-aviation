@@ -39,6 +39,13 @@ models:
       +schema: intermediate
       +tags: ["intermediate"]
 
+      int_flights_enriched:
+        +partition_by:
+          field: flight_date
+          data_type: date
+          granularity: month
+        +cluster_by: ["carrier_code", "origin_airport_code"]
+
     marts:
       # Marts = table (dikonsumsi langsung oleh Power BI)
       +materialized: table

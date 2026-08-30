@@ -1,0 +1,210 @@
+version: 2
+
+models:
+
+  # int_flights_enriched
+  - name: int_flights_enriched
+    description: >
+      Core intermediate model: semua flight segments diperkaya dengan
+      informasi maskapai, bandara, business context flags, dan
+      delay severity classification. Grain identik dengan stg_on_time_performance.
+      Input utama untuk fact_flights di marts layer.
+      Partitioned by flight_date (monthly), clustered by carrier_code.
+
+    columns:
+      - name: flight_id
+        description: Surrogate key — diwariskan dari staging
+        tests:
+          - unique
+          - not_null
+
+      - name: flight_date
+        description: Tanggal penerbangan
+        tests:
+          - not_null
+
+      - name: covid_period
+        description: >
+          Klasifikasi periode COVID: Pre-COVID, COVID-Impact, Recovery.
+          Business rule berdasarkan analisis industri penerbangan AS.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Pre-COVID', 'COVID-Impact', 'Recovery']
+
+      - name: flight_season
+        description: Musim meteorologis AS (Winter/Spring/Summer/Fall)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Winter', 'Spring', 'Summer', 'Fall']
+
+      - name: carrier_code
+        description: Kode IATA maskapai
+        tests:
+          - not_null
+
+      - name: carrier_type
+        description: Kategori model bisnis maskapai
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Legacy', 'Low-Cost', 'Mid-Size',
+                       'Ultra Low-Cost', 'Regional', 'Other']
+
+      - name: route_key
+        description: >
+          Identifikasi rute dalam format ORIGIN-DEST.
+          Contoh: ATL-LAX, ORD-JFK.
+          Catatan: Ini adalah directional route — ATL-LAX dan LAX-ATL
+          adalah dua route berbeda.
+        tests:
+          - not_null
+
+      - name: dep_time_of_day
+        description: Kategori waktu keberangkatan terjadwal
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Early Morning (5-9am)', 'Morning (9am-12pm)',
+                       'Afternoon (12-3pm)', 'Late Afternoon (3-6pm)',
+                       'Evening (6-9pm)', 'Night (9pm-12am)',
+                       'Red-Eye (12-5am)', 'Unknown']
+
+      - name: delay_severity
+        description: >
+          Klasifikasi keparahan delay: Early, On Time, Minor Delay,
+          Moderate Delay, Severe Delay, Extreme Delay.
+          NULL untuk cancelled flights.
+
+      - name: delay_severity_order
+        description: >
+          Urutan numerik delay_severity untuk sorting di Power BI
+          (1=Early, 6=Extreme Delay). NULL untuk cancelled.
+
+      - name: primary_delay_cause
+        description: >
+          Penyebab delay terbesar (Carrier/Late Aircraft/NAS/Weather/Security).
+          NULL untuk on-time atau cancelled flights.
+
+      - name: schedule_efficiency_ratio
+        description: >
+          Rasio actual vs scheduled elapsed time.
+          1.0 = tepat sesuai rencana, >1.0 = lebih lama dari rencana.
+          NULL untuk cancelled flights.
+
+      - name: route_distance_category
+        description: Kategori jarak rute berdasarkan mil
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Short-Haul (<250mi)', 'Medium-Haul (250-750mi)',
+                       'Long-Haul (750-1500mi)', 'Ultra Long-Haul (>1500mi)']
+
+  # int_delay_classified
+  - name: int_delay_classified
+    description: >
+      Subset dari int_flights_enriched yang hanya berisi delayed flights
+      (is_arr_delayed = true) dengan cause data lengkap.
+      Menambahkan proporsi delay cause dan derived flags.
+      Grain: satu baris = satu delayed flight dengan cause data.
+      Input untuk analisis delay cause di marts dan Python analysis.
+
+    columns:
+      - name: flight_id
+        description: Surrogate key dari staging
+        tests:
+          - unique
+          - not_null
+
+      - name: arr_delay_minutes_pos
+        description: >
+          Delay kedatangan dalam menit (selalu positif — hanya delayed flights).
+          Tidak pernah NULL di model ini karena sudah difilter.
+        tests:
+          - not_null
+
+      - name: primary_delay_cause
+        description: Penyebab delay dominan untuk flight ini
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Carrier', 'Late Aircraft', 'NAS',
+                       'Weather', 'Security', 'Unattributed']
+
+      - name: carrier_delay_pct
+        description: Proporsi carrier delay terhadap total delay (0-100%)
+
+      - name: is_cascade_delay
+        description: >
+          True jika late_aircraft_delay_minutes > 15.
+          Menunjukkan bahwa delay ini adalah efek domino dari
+          flight sebelumnya yang terlambat.
+        tests:
+          - not_null
+
+  # int_route_stats
+  - name: int_route_stats
+    description: >
+      Agregasi bulanan kinerja per rute (carrier + origin + dest).
+      Grain: satu baris = satu carrier × route × year × month.
+      Mencakup OTP rate, volume, delay cause breakdown, moving averages,
+      dan chronic delay route classification.
+      Input untuk fact_route_performance di marts dan reporting layer.
+
+    columns:
+      - name: flight_month_date
+        description: Tanggal hari pertama bulan (DATE) untuk time intelligence
+        tests:
+          - not_null
+
+      - name: carrier_code
+        description: Kode IATA maskapai
+        tests:
+          - not_null
+
+      - name: route_key
+        description: Identifikasi rute (ORIGIN-DEST)
+        tests:
+          - not_null
+
+      - name: total_operated_flights
+        description: Total penerbangan yang dioperasikan (non-cancelled) bulan ini
+        tests:
+          - not_null
+
+      - name: otp_rate_pct
+        description: >
+          On-Time Performance rate dalam persen.
+          Formula: (on_time_flights / total_operated_flights) × 100
+          DOT benchmark: ≥ 80%
+
+      - name: otp_rate_3m_avg
+        description: >
+          3-month moving average OTP rate.
+          Menghaluskan noise bulanan.
+          NULL untuk 2 bulan pertama per rute (window belum lengkap).
+
+      - name: is_chronic_delay_route
+        description: >
+          True jika rute ini memenuhi kriteria chronic delay:
+          OTP < 70% untuk 3 bulan berturut-turut dengan
+          minimal 30 penerbangan per bulan.
+        tests:
+          - not_null
+
+      - name: otp_performance_band
+        description: Klasifikasi kinerja OTP untuk color-coding Power BI
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Excellent (≥85%)', 'Good (80-85%)',
+                       'Fair (70-80%)', 'Poor (60-70%)', 'Critical (<60%)']
+
+      - name: dominant_delay_cause
+        description: Penyebab delay dominan di level rute-bulan
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Carrier', 'Late Aircraft', 'NAS',
+                       'Weather', 'Security', 'No Delay']
