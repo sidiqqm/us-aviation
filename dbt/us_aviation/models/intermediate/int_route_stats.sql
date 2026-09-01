@@ -44,8 +44,8 @@ monthly_route as (
         round(
             {{
                 safe_divide(
-                    'countif(is_on_time)',
-                    'count(*)'
+                    'countif(is_on_time and not is_not_cancelled)',
+                    'countif(not is_cancelled)'
                 )
             }} * 100, 2
         ) as otp_rate_pct,
@@ -176,7 +176,7 @@ final as (
             when total_nas_delay_min = max_cause_delay_min then 'NAS'
             when total_weather_delay_min = max_cause_delay_min then 'Weather'
             when total_security_delay_min = max_cause_delay_min then 'Security'
-else 'Unknown'
+            else 'Unknown'
         end as dominant_delay_cause
     from with_dominant
 )

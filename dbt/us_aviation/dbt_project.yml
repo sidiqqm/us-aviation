@@ -52,12 +52,36 @@ models:
       +schema: marts
       +tags: ["marts"]
       # Partitioning untuk fact tables besar
+       dim_date:
+        +materialized: table
+
+      dim_carrier:
+        +materialized: table
+
+      dim_airport:
+        +materialized: table
+
+      dim_route:
+        +materialized: table
+
+      dim_delay_cause:
+        +materialized: table
+
       fact_flights:
+        +materialized: table
         +partition_by:
           field: flight_date
           data_type: date
           granularity: month
         +cluster_by: ["carrier_code", "origin_airport_code"]
+
+      fact_route_monthly:
+        +materialized: table
+        +partition_by:
+          field: flight_month_date
+          data_type: date
+          granularity: month
+        +cluster_by: ["carrier_code"]
 
     reporting:
       # Reporting = table (KPI aggregates untuk Power BI)
