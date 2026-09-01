@@ -1,11 +1,10 @@
-
-# Schema Documentation & Tests — Marts Layer (Star Schema)
-
 version: 2
 
 models:
 
+  # ════════════════════════════════════════════════════════════
   # DIMENSION TABLES
+  # ════════════════════════════════════════════════════════════
 
   - name: dim_date
     description: >
@@ -52,6 +51,9 @@ models:
       Carrier/airline dimension — satu baris per maskapai unik.
       Menyertakan descriptive attributes dan lifetime summary metrics.
       SCD Type 1 (overwrite on change, no history).
+      DESIGN NOTE: summary metrics (otp_rate, total_flights, dst)
+      disimpan di sini secara intentional untuk menghindari circular
+      dependency dengan fact_flights.
     columns:
       - name: carrier_id
         description: PK — MD5 surrogate key dari carrier_code
@@ -70,9 +72,15 @@ models:
         description: True jika AA, DL, UA, atau WN
         tests: [not_null]
       - name: overall_otp_rate_pct
-        description: Rata-rata OTP rate lifetime 2019–2023
+        description: Weighted OTP rate lifetime 2019–2023
       - name: total_operated_flights
         description: Total penerbangan yang dioperasikan (non-cancelled)
+        tests: [not_null]
+      - name: total_delayed_flights
+        description: Total penerbangan delayed (non-cancelled dan is_arr_delayed)
+        tests: [not_null]
+      - name: dw_last_refreshed_at
+        description: Timestamp terakhir model di-refresh
         tests: [not_null]
 
   - name: dim_airport
@@ -80,7 +88,7 @@ models:
       Airport dimension — satu baris per bandara IATA unik.
       Role-playing dimension: digunakan dua kali dalam fact_flights
       sebagai origin (active relationship) dan destination
-      (inactive relationship di Power BI).
+      (inactive relationship di Power BI, gunakan USERELATIONSHIP di DAX).
       Menyertakan US region classification dan summary metrics.
     columns:
       - name: airport_id
@@ -100,12 +108,24 @@ models:
               values: ['Northeast', 'Midwest', 'South', 'West', 'Other']
       - name: otp_rate_as_origin_pct
         description: OTP rate 2019–2023 sebagai bandara asal
+      - name: otp_rate_as_dest_pct
+        description: OTP rate 2019–2023 sebagai bandara tujuan
+      - name: total_dest_arrivals
+        description: Total operated flights yang tiba di bandara ini
+        tests: [not_null]
+      - name: dw_last_refreshed_at
+        description: Timestamp terakhir model di-refresh
+        tests: [not_null]
 
   - name: dim_route
     description: >
       Route dimension — satu baris per kombinasi origin-dest unik.
       Directional: ATL-LAX ≠ LAX-ATL (dua baris berbeda).
+      Diturunkan dari int_route_stats — sudah aggregasi bulanan.
       Menyertakan lifetime performance metrics dan chronic delay history.
+      months_operated dan chronic_delay_months menggunakan
+      count(distinct year-month) — bukan count(*) — karena grain
+      int_route_stats adalah route × carrier × year-month.
     columns:
       - name: route_id
         description: PK — MD5 surrogate key dari route_key
@@ -113,6 +133,11 @@ models:
       - name: route_key
         description: NK — Format ORIGIN-DEST (e.g. ATL-LAX)
         tests: [unique, not_null]
+      - name: is_interstate_route
+        description: >
+          True jika origin dan dest beda state.
+          NULL jika salah satu state_code tidak tersedia
+          (territory AS seperti PR, GU, VI).
       - name: route_distance_category
         description: Kategori jarak rute
         tests:
@@ -120,8 +145,24 @@ models:
           - accepted_values:
               values: ['Short-Haul (<250mi)', 'Medium-Haul (250-750mi)',
                        'Long-Haul (750-1500mi)', 'Ultra Long-Haul (>1500mi)']
+      - name: lifetime_otp_rate_pct
+        description: >
+          Weighted OTP rate lifetime — dihitung dari
+          sum(on_time_flights) / sum(total_operated_flights).
+          Bukan avg(otp_rate_pct) untuk menghindari bias volume.
       - name: has_chronic_delay_history
         description: True jika rute pernah chronic delay di periode 2019–2023
+        tests: [not_null]
+      - name: months_operated
+        description: >
+          Jumlah bulan unik rute ini beroperasi.
+          Dihitung dengan count(distinct year-month) untuk menghindari
+          double-count akibat multi-carrier per bulan.
+        tests: [not_null]
+      - name: chronic_delay_months
+        description: >
+          Jumlah bulan unik rute ini masuk kategori chronic delay.
+          Dihitung dengan count(distinct year-month ketika is_chronic).
         tests: [not_null]
       - name: lifetime_otp_band
         description: Klasifikasi OTP lifetime untuk color-coding Power BI
@@ -130,27 +171,44 @@ models:
           - accepted_values:
               values: ['Excellent (≥85%)', 'Good (80-85%)',
                        'Fair (70-80%)', 'Poor (60-70%)', 'Critical (<60%)']
+      - name: dw_last_refreshed_at
+        description: Timestamp terakhir model di-refresh
+        tests: [not_null]
 
   - name: dim_delay_cause
     description: >
-      Static reference dimension — lima kategori penyebab delay
-      berdasarkan definisi resmi DOT/BTS.
-      Grain: satu baris = satu tipe penyebab delay (5 rows total).
+      Static reference dimension — 6 kategori penyebab delay:
+      5 berdasarkan definisi resmi DOT/BTS, 1 tambahan 'Unattributed'
+      untuk flight yang delayed tapi tidak ada cause yang terekam.
+      Grain: satu baris = satu tipe penyebab delay (6 rows total).
+      Digunakan sebagai lookup untuk Power BI slicer filtering.
     columns:
       - name: delay_cause_id
-        description: PK — Integer 1–5
+        description: PK — Integer 1–6
         tests: [unique, not_null]
       - name: delay_cause_code
-        description: Kode singkat (carrier/weather/nas/security/late_aircraft)
+        description: >
+          Kode singkat: carrier, weather, nas, security,
+          late_aircraft, unattributed
         tests: [unique, not_null]
       - name: delay_cause_category
-        description: Internal (maskapai bisa kontrol) vs External
+        description: >
+          Internal (maskapai bisa kontrol) vs External vs Unknown.
+          Unknown hanya untuk row Unattributed.
         tests:
-          - not_null
+          - not_null:
+              where: "delay_cause_code != 'unattributed'"
           - accepted_values:
-              values: ['Internal', 'External']
+              values: ['Internal', 'External', 'Unknown']
       - name: is_controllable_by_airline
-        description: True jika maskapai dapat mengurangi cause ini
+        description: >
+          True jika maskapai dapat mengurangi cause ini.
+          NULL untuk Unattributed (controllability tidak bisa ditentukan).
+        tests:
+          - accepted_values:
+              values: [true, false, null]
+      - name: dw_last_refreshed_at
+        description: Timestamp terakhir model di-refresh
         tests: [not_null]
 
   # ════════════════════════════════════════════════════════════
@@ -172,35 +230,35 @@ models:
         description: PK — Surrogate key dari staging (MD5 hash)
         tests: [unique, not_null]
       - name: date_key
-        description: FK → dim_date.date_key
+        description: FK ke dim_date.date_key
         tests:
           - not_null
           - relationships:
               to: ref('dim_date')
               field: date_key
       - name: carrier_id
-        description: FK → dim_carrier.carrier_id
+        description: FK ke dim_carrier.carrier_id
         tests:
           - not_null
           - relationships:
               to: ref('dim_carrier')
               field: carrier_id
       - name: origin_airport_id
-        description: FK → dim_airport.airport_id (role: origin)
+        description: "FK ke dim_airport.airport_id (role: origin — active relationship)"
         tests:
           - relationships:
               to: ref('dim_airport')
               field: airport_id
               severity: warn
       - name: dest_airport_id
-        description: FK → dim_airport.airport_id (role: destination)
+        description: "FK ke dim_airport.airport_id (role: destination — inactive relationship di Power BI)"
         tests:
           - relationships:
               to: ref('dim_airport')
               field: airport_id
               severity: warn
       - name: route_id
-        description: FK → dim_route.route_id
+        description: FK ke dim_route.route_id
         tests:
           - relationships:
               to: ref('dim_route')
@@ -220,8 +278,17 @@ models:
           - not_null
           - accepted_values:
               values: [0, 1]
+      - name: is_diverted
+        description: >
+          0 = tidak diverted, 1 = diverted.
+          Di model ini selalu 0 karena diverted difilter di source.
+          Disertakan sebagai audit trail.
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
       - name: is_arr_delayed
-        description: 0 = on time (atau cancelled), 1 = delayed ≥15 menit
+        description: 0 = on time atau cancelled, 1 = delayed 15 menit atau lebih
         tests:
           - accepted_values:
               values: [0, 1, null]
@@ -235,10 +302,23 @@ models:
           Klasifikasi keparahan: Early, On Time, Minor Delay,
           Moderate Delay, Severe Delay, Extreme Delay.
           NULL untuk cancelled flights.
+        tests:
+          - accepted_values:
+              values: ['Early', 'On Time', 'Minor Delay',
+                       'Moderate Delay', 'Severe Delay', 'Extreme Delay', null]
+      - name: primary_delay_cause
+        description: >
+          Penyebab delay terbesar berdasarkan menit.
+          NULL jika on-time atau cancelled.
+          Unattributed jika semua cause minutes = 0.
+        tests:
+          - accepted_values:
+              values: ['Carrier', 'Late Aircraft', 'NAS',
+                       'Weather', 'Security', 'Unattributed', null]
       - name: arr_delay_minutes
         description: Menit delay kedatangan (negatif = early, NULL = cancelled)
       - name: flight_count
-        description: Selalu bernilai 1. Untuk kemudahan SUM aggregation.
+        description: Selalu bernilai 1 — untuk kemudahan SUM aggregation
         tests:
           - not_null
           - accepted_values:
@@ -252,30 +332,35 @@ models:
       PERINGATAN SEMI-ADDITIVE: otp_rate_pct dan semua kolom _pct
       TIDAK BOLEH di-SUM lintas rute — gunakan AVG atau re-calculate
       dari komponen (on_time_flights / total_operated_flights).
+      CATATAN: cancel_rate_pct tidak tersedia di model ini karena
+      int_route_stats hanya agregasi operated flights.
     columns:
+      - name: route_monthly_id
+        description: PK — MD5 surrogate key dari carrier_code + route_key + year + month
+        tests: [unique, not_null]
       - name: month_date_key
-        description: FK → dim_date.date_key (hari pertama bulan)
+        description: FK ke dim_date.date_key (hari pertama bulan)
         tests:
           - not_null
           - relationships:
               to: ref('dim_date')
               field: date_key
       - name: carrier_id
-        description: FK → dim_carrier.carrier_id
+        description: FK ke dim_carrier.carrier_id
         tests:
           - not_null
           - relationships:
               to: ref('dim_carrier')
               field: carrier_id
       - name: route_id
-        description: FK → dim_route.route_id
+        description: FK ke dim_route.route_id
         tests:
           - relationships:
               to: ref('dim_route')
               field: route_id
               severity: warn
       - name: flight_month_date
-        description: Tanggal hari pertama bulan (DATE) — natural key
+        description: Tanggal hari pertama bulan dalam format DATE
         tests: [not_null]
       - name: carrier_code
         description: Kode IATA maskapai (natural key)
@@ -285,14 +370,24 @@ models:
         tests: [not_null]
       - name: total_operated_flights
         description: Total penerbangan operated bulan ini (additive)
-        tests: [not_null]
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
       - name: otp_rate_pct
         description: >
           On-Time Performance rate bulan ini (SEMI-ADDITIVE).
-           Jangan SUM — gunakan AVG atau re-calc dari komponen.
+          Jangan SUM — gunakan AVG atau re-calc dari
+          on_time_flights / total_operated_flights.
       - name: is_chronic_delay_route
-        description: True jika OTP <70% untuk 3+ bulan berturut-turut
-        tests: [not_null]
+        description: >
+          1 jika OTP lebih rendah dari 70% untuk 3 bulan berturut-turut
+          dengan minimal 30 penerbangan per bulan. 0 jika tidak.
+          INT64 untuk konsistensi dengan fact_flights.
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
       - name: otp_performance_band
         description: Klasifikasi kinerja OTP untuk color-coding
         tests:
@@ -300,3 +395,12 @@ models:
           - accepted_values:
               values: ['Excellent (≥85%)', 'Good (80-85%)',
                        'Fair (70-80%)', 'Poor (60-70%)', 'Critical (<60%)']
+      - name: dominant_delay_cause
+        description: Penyebab delay terbesar (total menit) bulan ini untuk rute ini
+        tests:
+          - accepted_values:
+              values: ['Carrier', 'Late Aircraft', 'NAS',
+                       'Weather', 'Security', 'No Delay', 'Unknown']
+      - name: dw_last_refreshed_at
+        description: Timestamp terakhir model di-refresh
+        tests: [not_null]

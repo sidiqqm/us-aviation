@@ -5,7 +5,7 @@ with airlines as (
 flight_stats as (
     select
         carrier_code,
-        count(*) as total_schedule_flights,
+        count(*) as total_scheduled_flights,
         countif(not is_cancelled) as total_operated_flights,
         countif(is_cancelled) as total_cancelled_flights,
         countif(not is_cancelled and is_arr_delayed) as total_delayed_flights,
@@ -62,17 +62,17 @@ joined as (
             'B6', 'NK', 'F9', 'G4', 'HA'
         ) as is_major_carrier,
 
-        coalesce(f.total_schedule_flights, 0) as total_schedule_flights,
+        coalesce(f.total_scheduled_flights, 0) as total_scheduled_flights,
         coalesce(f.total_operated_flights, 0) as total_operated_flights,
         coalesce(f.total_cancelled_flights, 0) as total_cancelled_flights,
         coalesce(f.total_delayed_flights, 0) as total_delayed_flights,
 
         f.overall_otp_rate_pct,
         f.overall_cancel_rate_pct,
-
+        f.avg_arr_delay_minutes,
         f.first_flight_date,
         f.last_flight_date,
-        f.unique_routes_served
+        coalesce(f.unique_routes_served, 0) as unique_routes_served,
 
         current_timestamp() as dw_last_refreshed_at
 

@@ -52,7 +52,7 @@ models:
       +schema: marts
       +tags: ["marts"]
       # Partitioning untuk fact tables besar
-       dim_date:
+      dim_date:
         +materialized: table
 
       dim_carrier:

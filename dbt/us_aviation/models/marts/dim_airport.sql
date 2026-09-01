@@ -23,7 +23,7 @@ origin_stats as (
                 )
             }} * 100, 2
             
-        ) as otp_rate_as_origin_pct,
+        ) as otp_rate_as_origin_pct
     from {{ ref('int_flights_enriched') }}
     group by origin_airport_code
 ),
@@ -37,6 +37,7 @@ dest_stats as (
             avg(
                 case
                     when not is_cancelled then arr_delay_minutes
+                end
             ), 2
         ) as avg_arr_delay_as_dest,
         
@@ -55,7 +56,7 @@ dest_stats as (
 
 joined as (
     select
-        {{ dbt_utils.generate_surrogate_key(['airport_code']) }} as airport_key,
+        {{ dbt_utils.generate_surrogate_key(['a.airport_code']) }} as airport_id,
 
         a.airport_code,
         a.airport_name,
@@ -123,9 +124,9 @@ joined as (
         os.avg_delay_as_origin,
         os.otp_rate_as_origin_pct,
 
-        coalesce(od.total_dest_arrivals) as total_dest_arrivals,
-        od.avg_arr_delay_as_dest,
-        od.otp_rate_as_dest_pct
+        coalesce(ds.total_dest_arrivals) as total_dest_arrivals,
+        ds.avg_arr_delay_as_dest,
+        ds.otp_rate_as_dest_pct
 
     from airports a
     left join origin_stats os

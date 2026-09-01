@@ -1,9 +1,9 @@
 with date_spine as (
     {{
         dbt_utils.date_spine(
-            datepart = "day"
-            start_date = 'cast(2019-01-01 as date)'
-            end_date = 'cast(2024-01-01 as date)'
+            datepart = "day",
+            start_date = "cast('2019-01-01' as date)",
+            end_date = "cast('2024-01-01' as date)"
         )
     }}
 ),
@@ -35,13 +35,13 @@ enriched as (
         format_date("%A", date_day) as day_of_week_name,
         left(format_date("%A", date_day), 3) as day_of_week_name_short,
 
-        extract(day_of_week from date_day) in (1, 7) as is_weekend,
+        extract(dayofweek from date_day) in (1, 7) as is_weekend,
 
         case
-            when extract(month from date_day) in (12, 1, 2) as 'Winter'
-            when extract(month from date_day) in (3, 4, 5) as 'Spring'
-            when extract(month from date_day) in (6, 7, 8) as 'Summer'
-            when extract(month from date_day) in (9, 10, 11) as 'Fall'
+            when extract(month from date_day) in (12, 1, 2) then 'Winter'
+            when extract(month from date_day) in (3, 4, 5) then 'Spring'
+            when extract(month from date_day) in (6, 7, 8) then 'Summer'
+            when extract(month from date_day) in (9, 10, 11) then 'Fall'
         end as season,
 
         date_day in (

@@ -1,22 +1,8 @@
--- dbt/us_aviation/models/marts/dim_delay_cause.sql
--- ============================================================
--- MODEL       : dim_delay_cause
--- LAYER       : Marts — Dimension
 -- GRAIN       : Satu baris = satu kategori penyebab delay
--- ROWS        : 6 rows (static reference table)
--- MATERIALIZED: table
---
--- Static reference table — nilai berasal dari definisi domain
--- DOT/BTS, bukan dari source flight data.
---
 -- Digunakan sebagai:
 --   1. Lookup untuk delay cause analysis di Power BI
 --   2. Slicer dimension — filter by cause category
 --   3. Reference untuk controllability segmentation
---
--- Unattributed ditambahkan untuk menangani delayed flights
--- yang tidak memiliki delay cause yang dapat diatribusikan.
--- ============================================================
 
 with delay_causes as (
 
@@ -26,8 +12,7 @@ with delay_causes as (
         'Carrier Delay' as delay_cause_name,
         'Internal' as delay_cause_category,
         'carrier_delay_minutes' as fact_column_name,
-        'Delay caused by circumstances within the airline''s control: maintenance, crew problems, aircraft cleaning, baggage loading, fueling'
-            as cause_definition,
+        'Delay caused by circumstances within the airline control: maintenance, crew problems, aircraft cleaning, baggage loading, fueling' as cause_definition,
         true as is_controllable_by_airline
 
     union all
@@ -84,7 +69,6 @@ with delay_causes as (
         null,
         'Flight arrived delayed but no specific delay cause was attributed.',
         null
-
 )
 
 select

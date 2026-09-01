@@ -20,6 +20,7 @@ monthly_route as (
         flight_year,
         flight_month,
         flight_month_name,
+        flight_quarter,
         flight_season,
         covid_period,
 
@@ -44,7 +45,7 @@ monthly_route as (
         round(
             {{
                 safe_divide(
-                    'countif(is_on_time and not is_not_cancelled)',
+                    'countif(is_on_time and not is_cancelled)',
                     'countif(not is_cancelled)'
                 )
             }} * 100, 2
@@ -79,6 +80,7 @@ monthly_route as (
         flight_year,
         flight_month,
         flight_month_name,
+        flight_quarter,
         flight_season,
         covid_period,
         date_trunc(flight_date, month),
