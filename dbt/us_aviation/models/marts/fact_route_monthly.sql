@@ -1,28 +1,8 @@
--- dbt/us_aviation/models/marts/fact_route_monthly.sql
--- ============================================================
--- MODEL       : fact_route_monthly
--- LAYER       : Marts — Fact (Periodic Snapshot)
 -- GRAIN       : Satu baris = satu carrier × route × year-month
--- ROWS        : ~90,000 rows
--- MATERIALIZED: table
---               Partitioned by flight_month_date (MONTH)
---               Clustered by carrier_code
---
--- Periodic snapshot fact table: merekam "kondisi" kinerja
--- setiap rute pada setiap bulan dalam periode analisis.
---
--- Berbeda dengan fact_flights (transactional), tabel ini
--- adalah pre-aggregated — cocok untuk:
--- - Trend analysis (OTP time series per rute)
--- - Executive dashboard (aggregated KPIs)
--- - Forecasting (data sudah dalam grain yang tepat)
--- - Power BI time intelligence functions
---
+
 -- SEMI-ADDITIVE MEASURES:
 -- otp_rate_pct, cancel_rate_pct, dan measures berbasis rate
 -- TIDAK BOLEH di-SUM lintas rute — gunakan AVERAGEX di DAX
--- atau re-calculate dari komponen (on_time / total_operated).
--- ============================================================
 
 with
 route_stats as (
@@ -71,9 +51,6 @@ fact as (
         oa.airport_id as origin_airport_id,
         da.airport_id as dest_airport_id,
 
-        -- Untuk cancel rate: gunakan fact_flights atau tambahkan total_scheduled ke int_route_stats
-        -- cancel_rate sudah ada di dim_carrier
-
         rs.flight_month_date,
         rs.flight_year,
         rs.flight_month,
@@ -94,8 +71,6 @@ fact as (
         rs.otp_performance_band,
         rs.dominant_delay_cause,
 
-        -- [FIX] Di-cast ke INT64 — konsisten dengan fact_flights
-        -- agar bisa di-SUM langsung di Power BI
         cast(rs.is_chronic_delay_route as INT64) as is_chronic_delay_route,
         cast(rs.origin_is_major_hub    as INT64) as origin_is_major_hub,
         cast(rs.dest_is_major_hub      as INT64) as dest_is_major_hub,
@@ -114,16 +89,11 @@ fact as (
         rs.otp_rate_mom_change,
         rs.otp_rate_yoy_change,
 
-        -- Semi-Additive / Non-Additive Measures — Delay ─
-        -- ini bukan additive — tidak bisa di-SUM
-
         rs.avg_arr_delay_all,
         rs.avg_arr_delay_delayed_only,
         rs.max_arr_delay,
         rs.median_arr_delay,
 
-        -- Additive Measures — Delay Cause (Total Menit)
-        -- Ini truly additive — bisa di-SUM lintas bulan/rute
         rs.total_carrier_delay_min,
         rs.total_weather_delay_min,
         rs.total_nas_delay_min,
@@ -131,8 +101,6 @@ fact as (
         rs.total_late_aircraft_delay_min,
         rs.total_delay_minutes,
 
-        -- Semi-Additive — Delay Cause Share (%) ─────────
-        -- JANGAN SUM — re-calc dari total menit jika perlu
         round(
             {{ safe_divide(
                 'rs.total_carrier_delay_min',

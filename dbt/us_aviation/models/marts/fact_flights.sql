@@ -1,11 +1,7 @@
 
 -- GRAIN       : Satu baris = satu scheduled flight segment
 --               (operated + cancelled, non-diverted)
--- MATERIALIZED: table
---               Partitioned by flight_date (MONTH)
---               Clustered by carrier_code, origin_airport_code
 
--- DESIGN DECISIONS:
 -- 1. Menyimpan BOTH surrogate key (untuk proper DW join)
 --    DAN natural key (untuk readability dan ad-hoc query)
 -- 2. Semua boolean flags di-cast ke INT64 (0/1) agar
