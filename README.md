@@ -2,7 +2,7 @@
 
 ### 7.1 Business Background
 
-**Nama Project:** US Aviation Analytics — Airline On-Time Performance Intelligence  
+**Nama Project:** US Aviation Analytics Airline On-Time Performance Intelligence  
 **Domain:** Transportation Analytics / Aviation Business Intelligence  
 **Periode Analisis:** Januari 2019 — Desember 2023 (5 tahun penuh)
 
@@ -55,23 +55,23 @@ Industri penerbangan AS menghadapi tantangan ketepatan waktu yang kompleks dan m
 
 Project ini menggunakan framework **SMART** untuk memastikan tujuan analisis terukur dan relevan terhadap kebutuhan bisnis.
 
-#### Objective 1 — Delay Driver Identification
+#### Objective 1 Delay Driver Identification
 
 Mengidentifikasi dan mengkuantifikasi penyebab utama keterlambatan penerbangan berdasarkan data BTS 2019–2023 sehingga manajemen dapat memprioritaskan area intervensi yang memiliki dampak terbesar.
 
-#### Objective 2 — Temporal Pattern Analysis
+#### Objective 2 Temporal Pattern Analysis
 
 Memahami pola musiman dan siklikal dalam *on-time performance* untuk mendukung perencanaan kapasitas dan manajemen operasional.
 
-#### Objective 3 — COVID-19 Impact Analysis
+#### Objective 3 COVID-19 Impact Analysis
 
 Menganalisis dampak COVID-19 terhadap volume penerbangan dan kinerja operasional industri penerbangan AS serta mengukur trajektori pemulihan selama 2022–2023.
 
-#### Objective 4 — Performance Benchmarking
+#### Objective 4 Performance Benchmarking
 
 Membandingkan *on-time performance* antar maskapai dan bandara untuk mengidentifikasi benchmark, performance gap, dan potential improvement areas.
 
-#### Objective 5 — Short-Term Forecasting
+#### Objective 5 Short-Term Forecasting
 
 Memproyeksikan tren *on-time performance* jangka pendek berdasarkan pola historis, khususnya tren 2022–2023, sebagai masukan untuk perencanaan strategis.
 
