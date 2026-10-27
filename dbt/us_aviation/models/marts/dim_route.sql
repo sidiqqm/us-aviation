@@ -23,9 +23,6 @@ route_base as (
 
         sum(total_operated_flights) as lifetime_flights,
 
-        -- Raw counts untuk weighted OTP — lebih akurat dari avg(pct)
-        -- Lihat: avg(otp_rate_pct) memberi bobot sama ke setiap bulan
-        -- meski volume penerbangan per bulan berbeda
         sum(on_time_flights) as lifetime_on_time_flights,
 
         max(avg_distance_miles) as route_distance_miles,
@@ -35,8 +32,6 @@ route_base as (
 
         count(distinct carrier_code) as carriers_serving_route,
 
-        -- → satu bulan bisa punya N rows jika N carrier melayani rute ini
-        -- → count(*) akan overcount sebesar jumlah carrier per bulan
         count(
             distinct concat(
                 cast(flight_year as string),

@@ -72,8 +72,8 @@ fact as (
         rs.dominant_delay_cause,
 
         cast(rs.is_chronic_delay_route as INT64) as is_chronic_delay_route,
-        cast(rs.origin_is_major_hub    as INT64) as origin_is_major_hub,
-        cast(rs.dest_is_major_hub      as INT64) as dest_is_major_hub,
+        cast(rs.origin_is_major_hub as INT64) as origin_is_major_hub,
+        cast(rs.dest_is_major_hub as INT64) as dest_is_major_hub,
 
         rs.total_operated_flights,
         rs.delayed_flights,

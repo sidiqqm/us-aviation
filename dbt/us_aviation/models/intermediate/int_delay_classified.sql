@@ -46,7 +46,7 @@ classified as (
         delay_severity_order,
         primary_delay_cause,
 
-        -- Delay cause (minutes absolute)
+        -- Delay cause
         coalesce(carrier_delay_minutes, 0) as carrier_delay_minutes,
         coalesce(weather_delay_minutes, 0) as weather_delay_minutes,
         coalesce(nas_delay_minutes, 0) as nas_delay_minutes,
@@ -128,7 +128,6 @@ classified as (
             else false
         end as late_aircraft_is_dominant,
 
-        -- Delay Magnitude Flags
         arr_delay_minutes_pos > 60 as is_over_1_hour,
         arr_delay_minutes_pos > 120 as is_over_2_hours,
         arr_delay_minutes_pos > 240 as is_over_4_hours,

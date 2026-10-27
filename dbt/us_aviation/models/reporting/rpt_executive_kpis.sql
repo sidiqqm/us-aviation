@@ -1,10 +1,4 @@
 -- GRAIN       : Satu baris = satu kombinasi year × covid_period
--- PURPOSE     : Executive Dashboard — KPI Summary Cards Menjawab BQ-01, BQ-02, BQ-03, BQ-10
-
--- Didesain untuk Power BI halaman Executive Dashboard:
--- KPI cards: OTP rate, cancel rate, avg delay, total flights
--- YoY comparison cards
--- COVID period comparison
 
 with base as (
     select

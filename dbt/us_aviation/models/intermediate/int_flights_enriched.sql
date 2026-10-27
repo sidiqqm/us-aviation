@@ -61,7 +61,6 @@ delay_calc as (
     from flights
 ),
 
--- menghilangkan duplikasi coalesce(is_major_hub, false) yang sebelumnya muncul 2x per bandara
 hub_flags as (
     select
         f.flight_id,
@@ -74,7 +73,6 @@ hub_flags as (
         on f.dest_airport_code = da.airport_code
 ),
 
--- Core JOIN
 enriched as (
 
     select
@@ -125,7 +123,7 @@ enriched as (
         f.carrier_code,
         coalesce(
             al.airline_name_full,
-            f.carrier_code                       -- fallback jika tidak ada di lookup
+            f.carrier_code
         ) as airline_name_full,
         coalesce(
             al.airline_name_short,
@@ -227,7 +225,6 @@ enriched as (
             else null
         end as delay_severity,
 
-        -- Derived: Severity numeric order (untuk sorting di Power BI)
         case
             when f.is_cancelled then null
             when f.arr_delay_minutes < 0 then 1
@@ -269,7 +266,7 @@ enriched as (
         f.distance_miles,
         f.distance_group,
 
-        -- Ratio actual vs scheduled time (1.0 = perfect, >1.0 = longer than planned)
+        -- Ratio actual vs scheduled time (1.0 = perfect, >1.0 = lebih lama dari seharusnya)
         {{ safe_divide('f.actual_elapsed_minutes', 'f.scheduled_elapsed_minutes') }} as schedule_efficiency_ratio,
 
         case

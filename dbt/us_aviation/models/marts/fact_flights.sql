@@ -2,15 +2,6 @@
 -- GRAIN       : Satu baris = satu scheduled flight segment
 --               (operated + cancelled, non-diverted)
 
--- 1. Menyimpan BOTH surrogate key (untuk proper DW join)
---    DAN natural key (untuk readability dan ad-hoc query)
--- 2. Semua boolean flags di-cast ke INT64 (0/1) agar
---    dapat di-SUM langsung di Power BI dan SQL
--- 3. Degenerate dimensions (delay_severity, covid_period, dll.)
---    disertakan langsung di fact table untuk menghindari
---    join yang tidak perlu di Power BI queries
--- 4. flight_count = 1 selalu, untuk kemudahan SUM aggregation
-
 with
 
 flights as (
@@ -83,18 +74,12 @@ fact as (
         cast(f.origin_is_major_hub as INT64) as origin_is_major_hub,
         cast(f.dest_is_major_hub as INT64) as dest_is_major_hub,
 
-        -- Diverted tidak muncul di data (sudah difilter),
-        -- tapi flag ini dipertahankan sebagai audit trail = selalu 0
-        cast(f.is_diverted           as INT64) as is_diverted,
+        cast(f.is_diverted as INT64) as is_diverted,
 
-        -- Additive Measures — Delay (menit)
-        -- NULL dipertahankan untuk cancelled: agar AVG tetap akurat
         f.arr_delay_minutes,
         f.arr_delay_minutes_pos,
         f.dep_delay_minutes,
 
-        -- Additive Measures — Delay Cause
-        -- NULL jika on-time atau cancelled (MAR, by design)
         f.carrier_delay_minutes,
         f.weather_delay_minutes,
         f.nas_delay_minutes,
@@ -102,7 +87,6 @@ fact as (
         f.late_aircraft_delay_minutes,
         f.total_cause_minutes,
 
-        -- Additive Measures — Operations
         f.air_time_minutes,
         f.actual_elapsed_minutes,
         f.scheduled_elapsed_minutes,
@@ -110,13 +94,8 @@ fact as (
         f.taxi_in_minutes,
         f.distance_miles,
 
-        -- schedule_efficiency_ratio removed,
-        -- rawan disalahgunakan dengan SUM() di Power BI karena hasilnya gak akurat seperti kasus otp_rate_pct.
-        -- Hitung di DAX nanti DIVIDE(SUM(actual_elapsed), SUM(scheduled_elapsed)) lebih akurat (true weighted ratio)
-
         1 as flight_count,
 
-        -- Metadata
         f.loaded_at,
         f.source_file
 
