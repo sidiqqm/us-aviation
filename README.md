@@ -2,7 +2,7 @@
 
 ### 7.1 Business Background
 
-**Nama Project:** US Aviation Analytics — Airline On-Time Performance Intelligence  
+**Nama Project:** US Aviation Analytics Airline On-Time Performance Intelligence  
 **Domain:** Transportation Analytics / Aviation Business Intelligence  
 **Periode Analisis:** Januari 2019 — Desember 2023 (5 tahun penuh)
 
@@ -55,23 +55,23 @@ Industri penerbangan AS menghadapi tantangan ketepatan waktu yang kompleks dan m
 
 Project ini menggunakan framework **SMART** untuk memastikan tujuan analisis terukur dan relevan terhadap kebutuhan bisnis.
 
-#### Objective 1 — Delay Driver Identification
+#### Objective 1 Delay Driver Identification
 
 Mengidentifikasi dan mengkuantifikasi penyebab utama keterlambatan penerbangan berdasarkan data BTS 2019–2023 sehingga manajemen dapat memprioritaskan area intervensi yang memiliki dampak terbesar.
 
-#### Objective 2 — Temporal Pattern Analysis
+#### Objective 2 Temporal Pattern Analysis
 
 Memahami pola musiman dan siklikal dalam *on-time performance* untuk mendukung perencanaan kapasitas dan manajemen operasional.
 
-#### Objective 3 — COVID-19 Impact Analysis
+#### Objective 3 COVID-19 Impact Analysis
 
 Menganalisis dampak COVID-19 terhadap volume penerbangan dan kinerja operasional industri penerbangan AS serta mengukur trajektori pemulihan selama 2022–2023.
 
-#### Objective 4 — Performance Benchmarking
+#### Objective 4 Performance Benchmarking
 
 Membandingkan *on-time performance* antar maskapai dan bandara untuk mengidentifikasi benchmark, performance gap, dan potential improvement areas.
 
-#### Objective 5 — Short-Term Forecasting
+#### Objective 5 Short-Term Forecasting
 
 Memproyeksikan tren *on-time performance* jangka pendek berdasarkan pola historis, khususnya tren 2022–2023, sebagai masukan untuk perencanaan strategis.
 
@@ -138,20 +138,7 @@ Project ini dirancang untuk menjawab **12 Business Questions** berikut secara si
 
 ---
 
-### 7.7 Project Success Metrics
-
-| Dimensi | Metrik Keberhasilan |
-|---|---|
-| **Coverage** | Semua 12 Business Questions terjawab dengan data dan interpretasi |
-| **Data Quality** | Zero critical data quality issues pada mart layer |
-| **Statistical Rigor** | Minimum 5 statistical tests yang relevan dengan interpretasi bisnis |
-| **Dashboard Usability** | 4 halaman dashboard: Executive, Operational, Trend, dan Detail |
-| **Insight Quality** | Minimum 8 insights dengan format Observation → Evidence → Interpretation → Recommendation → Business Impact |
-| **Documentation** | README.md lengkap dan dapat direproduksi oleh reviewer |
-
----
-
-### 7.8 Scope
+### 7.7 Scope
 
 #### In Scope
 
@@ -183,30 +170,6 @@ Project tidak mencakup:
 - Machine learning
 - Predictive modeling
 - Analisis keuangan maskapai seperti revenue dan cost
-
----
-
-### 7.9 Assumptions
-
-| ID | Asumsi | Justifikasi |
-|---|---|---|
-| **A01** | Data BTS dianggap akurat dan representatif | BTS merupakan sumber resmi DOT dan digunakan oleh regulator federal |
-| **A02** | Keterlambatan >15 menit didefinisikan sebagai "delayed" | Mengikuti definisi *on-time performance* yang digunakan dalam project |
-| **A03** | Penerbangan yang cancelled tidak dihitung dalam OTA denominator | Cancelled flights dianalisis sebagai KPI terpisah |
-| **A04** | Data 2020–2021 merepresentasikan kondisi COVID-19 dan bukan kondisi operasional normal | Periode tersebut diperlakukan sebagai anomaly/disruption period dalam analisis trend |
-| **A05** | Carrier codes dianggap konsisten sepanjang periode analisis | Historical changes seperti merger atau acquisition perlu diverifikasi pada tahap Data Understanding |
-
----
-
-### 7.10 Risks
-
-| Risk | Likelihood | Impact | Mitigasi |
-|---|---|---|---|
-| Data volume sangat besar sehingga memperlambat BigQuery query | Medium | Medium | Menggunakan partitioning dan clustering pada BigQuery |
-| Missing values tinggi pada delay cause columns | High | Medium | Mendokumentasikan missingness dan melakukan imputation hanya jika terdapat dasar logis |
-| Perubahan carrier akibat merger atau kebangkrutan | Medium | Low | Membuat `dim_carrier` dengan historical validity dates |
-| Bias analisis akibat COVID-19 anomaly | High | High | Selalu melakukan segmentasi Pre-COVID / COVID / Post-COVID |
-| Ukuran CSV bulanan besar (±300–500 MB) | Medium | Low | Menggunakan `bq CLI` untuk upload dibandingkan manual upload melalui UI |
 
 ---
 
