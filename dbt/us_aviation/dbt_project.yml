@@ -1,7 +1,4 @@
-# dbt/us_aviation/dbt_project.yml
-# ============================================================
 # dbt Project Configuration — US Aviation Analytics
-# ============================================================
 
 name: 'us_aviation'
 version: '1.0.0'
@@ -11,10 +8,10 @@ config-version: 2
 profile: 'us_aviation'
 
 # Lokasi folder model, macros, tests, seeds
-model-paths:    ["models"]
-macro-paths:    ["macros"]
-test-paths:     ["tests"]
-seed-paths:     ["seeds"]
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
 analysis-paths: ["analyses"]
 snapshot-paths: ["snapshots"]
 

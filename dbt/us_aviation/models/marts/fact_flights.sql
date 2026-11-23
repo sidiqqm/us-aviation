@@ -102,8 +102,8 @@ fact as (
     from flights f
     left join dim_date d on f.flight_date = d.full_date
     left join dim_carrier c on f.carrier_code = c.carrier_code
-    left join dim_airport oa on f.origin_airport_code = oa.airport_code
-    left join dim_airport da on f.dest_airport_code = da.airport_code
+    left join dim_airport oa on f.origin_airport_id = oa.airport_code
+    left join dim_airport da on f.dest_airport_id = da.airport_code
     left join dim_route r on f.route_key = r.route_key
 
 )

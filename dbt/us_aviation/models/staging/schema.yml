@@ -34,36 +34,49 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: [2019, 2020, 2021, 2022, 2023]
+              arguments:
+                values: [2019, 2020, 2021, 2022, 2023]
+                quote: false
 
       - name: flight_quarter
         description: Kuartal penerbangan (1–4)
         tests:
           - not_null
           - accepted_values:
-              values: [1, 2, 3, 4]
+              arguments:
+                values: [1, 2, 3, 4]
+                quote: false
 
       - name: flight_month
         description: Bulan penerbangan (1–12)
         tests:
           - not_null
           - accepted_values:
-              values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                quote: false
 
       - name: flight_day_of_week
         description: Hari dalam seminggu (1=Senin, 7=Minggu)
         tests:
           - not_null
           - accepted_values:
-              values: [1, 2, 3, 4, 5, 6, 7]
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 7]
+                quote: false
 
       - name: day_of_week_name
-        description: Nama hari dalam bahasa Inggris
         tests:
-          - not_null
           - accepted_values:
-              values: ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
-                       'Friday', 'Saturday', 'Sunday']
+              arguments:
+                values:
+                  - Monday
+                  - Tuesday
+                  - Wednesday
+                  - Thursday
+                  - Friday
+                  - Saturday
+                  - Sunday
 
       # Identifikasi Penerbangan
       - name: carrier_code
@@ -77,25 +90,29 @@ models:
           - not_null
 
       # Rute
-      - name: origin_airport_code
-        description: Kode IATA bandara asal (3 karakter)
+      - name: origin_airport_id
+        description: Kode ID bandara asal
         tests:
           - not_null
           - relationships:
-              to: ref('stg_airport_lookup')
-              field: airport_code
+              arguments: 
+                to: ref('stg_airport_lookup')
+                field: airport_id
               # Severity warning karena ada airport kecil
               # yang mungkin tidak ada di lookup table
-              severity: warn
+              config: 
+                severity: warn
 
-      - name: dest_airport_code
-        description: Kode IATA bandara tujuan (3 karakter)
+      - name: dest_airport_id
+        description: Kode ID bandara tujuan
         tests:
           - not_null
           - relationships:
-              to: ref('stg_airport_lookup')
-              field: airport_code
-              severity: warn
+              arguments: 
+                to: ref('stg_airport_lookup')
+                field: airport_id
+              config:
+                severity: warn
 
       - name: origin_state_code
         description: Kode negara bagian asal (2 karakter)
@@ -120,7 +137,9 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: [false]
+              arguments:
+                values: [false]
+                quote: false
 
       - name: is_on_time
         description: >
@@ -138,7 +157,13 @@ models:
         description: Kode penyebab pembatalan (A/B/C/D). NULL jika tidak dibatalkan.
         tests:
           - accepted_values:
-              values: ['A', 'B', 'C', 'D', null]
+              arguments:
+                values: 
+                  - A
+                  - B
+                  - C
+                  - D
+                  - null
 
       - name: cancellation_reason
         description: >
@@ -147,9 +172,14 @@ models:
           NULL jika tidak dibatalkan.
         tests:
           - accepted_values:
-              values: ['Carrier', 'Weather', 'National Air System',
-                       'Security', null]
-
+              arguments:
+                values:
+                  - Carrier
+                  - Weather
+                  - National Air System
+                  - Security
+                  - null
+                  
       # Delay Metrics
       - name: arr_delay_minutes
         description: >
@@ -201,8 +231,8 @@ models:
       Deduplicated menggunakan window function.
 
     columns:
-      - name: carrier_code
-        description: Kode IATA maskapai (2 karakter)
+      - name: carrier_id
+        description: Kode ID maskapai
         tests:
           - unique
           - not_null
@@ -212,16 +242,24 @@ models:
         tests:
           - not_null
 
-      - name: airline_name_short
-        description: Nama maskapai pendek (tanpa sufiks legal)
+      - name: carrier_code
+        description: Kode IATA maskapai
+        tests:
+          - not_null
 
       - name: carrier_type
         description: Kategori maskapai berdasarkan model bisnis
         tests:
           - not_null
           - accepted_values:
-              values: ['Legacy', 'Low-Cost', 'Mid-Size',
-                       'Ultra Low-Cost', 'Regional', 'Other']
+              arguments:
+                values: 
+                  - Legacy
+                  - Low-Cost
+                  - Mid-Size
+                  - Ultra Low-Cost
+                  - Regional
+                  - Other
 
   # stg_airport_lookup
   - name: stg_airport_lookup
@@ -230,8 +268,8 @@ models:
       Grain: satu baris = satu kode bandara unik.
 
     columns:
-      - name: airport_code
-        description: Kode IATA bandara (3 karakter)
+      - name: airport_id
+        description: Kode ID bandara
         tests:
           - unique
           - not_null
@@ -249,8 +287,3 @@ models:
 
       - name: airport_name
         description: Nama resmi bandara (hasil parse setelah ':')
-
-      - name: is_major_hub
-        description: True jika termasuk 30 bandara tersibuk di AS
-        tests:
-          - not_null

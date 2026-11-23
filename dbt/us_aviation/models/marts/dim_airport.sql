@@ -1,10 +1,13 @@
 with airports as (
-    select * from {{ ref('stg_airport_lookup') }}
+    select
+        *,
+        upper(trim(airport_code)) as clean_airport_code
+    from {{ ref('stg_airport_lookup') }}
 ),
 
 origin_stats as (
     select
-        origin_airport_code as airport_code,
+        upper(trim(origin_airport_code)) as airport_code,
         count(*) as total_origin_departure,
         countif(not is_cancelled) as total_origin_operated,
         round(
@@ -14,7 +17,6 @@ origin_stats as (
                 end
             ), 2
         ) as avg_delay_as_origin,
-
         round(
             {{
                 safe_divide(
@@ -22,17 +24,15 @@ origin_stats as (
                     'countif(not is_cancelled)'
                 )
             }} * 100, 2
-            
         ) as otp_rate_as_origin_pct
     from {{ ref('int_flights_enriched') }}
-    group by origin_airport_code
+    group by 1
 ),
 
 dest_stats as (
     select
-        dest_airport_code as airport_code,
+        upper(trim(dest_airport_code)) as airport_code,
         count(*) as total_dest_arrivals,
-
         round(
             avg(
                 case
@@ -40,100 +40,51 @@ dest_stats as (
                 end
             ), 2
         ) as avg_arr_delay_as_dest,
-        
         round(
             {{
                 safe_divide(
                     'countif(not is_cancelled and is_on_time)',
                     'countif(not is_cancelled)'
                 )
-            }}  * 100, 2
+            }} * 100, 2
         ) as otp_rate_as_dest_pct
-
     from {{ ref('int_flights_enriched') }}
-    group by dest_airport_code
+    group by 1
 ),
 
 joined as (
     select
-        {{ dbt_utils.generate_surrogate_key(['a.airport_code']) }} as airport_id,
+        {{ dbt_utils.generate_surrogate_key(['a.clean_airport_code']) }} as airport_id,
 
-        a.airport_code,
+        a.clean_airport_code as airport_code,
         a.airport_name,
         a.city_name,
         a.state_code,
         a.is_major_hub,
 
-        case a.state_code
-            when 'ME' then 'Northeast'
-            when 'VT' then 'Northeast'
-            when 'RI' then 'Northeast'
-            when 'NY' then 'Northeast'
-            when 'PA' then 'Northeast'
-            when 'NH' then 'Northeast'
-            when 'MA' then 'Northeast'
-            when 'CT' then 'Northeast'
-            when 'NJ' then 'Northeast'
-            when 'OH' then 'Midwest'
-            when 'MI' then 'Midwest'
-            when 'IN' then 'Midwest'
-            when 'IL' then 'Midwest'
-            when 'WI' then 'Midwest'
-            when 'MN' then 'Midwest'
-            when 'IA' then 'Midwest'
-            when 'MO' then 'Midwest'
-            when 'ND' then 'Midwest'
-            when 'SD' then 'Midwest'
-            when 'NE' then 'Midwest'
-            when 'KS' then 'Midwest'
-            when 'DE' then 'South'     
-            when 'MD' then 'South'
-            when 'DC' then 'South'     
-            when 'VA' then 'South'
-            when 'WV' then 'South'     
-            when 'NC' then 'South'
-            when 'SC' then 'South'     
-            when 'GA' then 'South'
-            when 'FL' then 'South'     
-            when 'KY' then 'South'
-            when 'TN' then 'South'     
-            when 'AL' then 'South'
-            when 'MS' then 'South'     
-            when 'AR' then 'South'
-            when 'LA' then 'South'     
-            when 'OK' then 'South'
-            when 'TX' then 'South'
-            when 'MT' then 'West'      
-            when 'ID' then 'West'
-            when 'WY' then 'West'      
-            when 'CO' then 'West'
-            when 'NM' then 'West'      
-            when 'AZ' then 'West'
-            when 'UT' then 'West'      
-            when 'NV' then 'West'
-            when 'WA' then 'West'      
-            when 'OR' then 'West'
-            when 'CA' then 'West'      
-            when 'AK' then 'West'
-            when 'HI' then 'West'
+        case
+            when a.state_code in ('ME', 'VT', 'RI', 'NY', 'PA', 'NH', 'MA', 'CT', 'NJ') then 'Northeast'
+            when a.state_code in ('OH', 'MI', 'IN', 'IL', 'WI', 'MN', 'IA', 'MO', 'ND', 'SD', 'NE', 'KS') then 'Midwest'
+            when a.state_code in ('DE', 'MD', 'DC', 'VA', 'WV', 'NC', 'SC', 'GA', 'FL', 'KY', 'TN', 'AL', 'MS', 'AR', 'LA', 'OK', 'TX') then 'South'
+            when a.state_code in ('MT', 'ID', 'WY', 'CO', 'NM', 'AZ', 'UT', 'NV', 'WA', 'OR', 'CA', 'AK', 'HI') then 'West'
             else 'Other'
         end as us_region,
 
-        coalesce(os.total_origin_departure) as total_origin_departure,
-        coalesce(os.total_origin_operated) as total_origin_operated,
+        -- Tambahkan nilai default 0 pada COALESCE
+        coalesce(os.total_origin_departure, 0) as total_origin_departure,
+        coalesce(os.total_origin_operated, 0) as total_origin_operated,
         os.avg_delay_as_origin,
         os.otp_rate_as_origin_pct,
 
-        coalesce(ds.total_dest_arrivals) as total_dest_arrivals,
+        coalesce(ds.total_dest_arrivals, 0) as total_dest_arrivals,
         ds.avg_arr_delay_as_dest,
         ds.otp_rate_as_dest_pct
 
     from airports a
     left join origin_stats os
-        on a.airport_code = os.airport_code
+        on a.clean_airport_code = os.airport_code
     left join dest_stats ds
-        on a.airport_code = ds.airport_code
-
+        on a.clean_airport_code = ds.airport_code
 )
 
 select * from joined

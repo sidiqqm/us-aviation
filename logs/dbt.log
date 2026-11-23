@@ -1,0 +1,30 @@
+[0m17:12:48.350825 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001A9082BE510>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001A905C1CF50>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001A90AC37890>]}
+
+
+============================== 17:12:48.357286 | fdd83598-1fc9-4cd9-af8c-237bf650bf67 ==============================
+[0m17:12:48.357286 [info ] [MainThread]: Running with dbt=1.12.3
+[0m17:12:48.358107 [debug] [MainThread]: running dbt with arguments {'maximum_seed_size_mib': '1', 'no_print': 'None', 'static_parser': 'True', 'target_path': 'None', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'version_check': 'True', 'printer_width': '80', 'write_json': 'True', 'introspect': 'True', 'log_cache_events': 'False', 'empty': 'None', 'cache_selected_only': 'False', 'log_format': 'default', 'debug': 'False', 'fail_fast': 'False', 'profiles_dir': 'C:\\Users\\LENOVO\\.dbt', 'send_anonymous_usage_stats': 'True', 'quiet': 'False', 'warn_error': 'None', 'partial_parse': 'True', 'use_colors': 'True', 'hints_enabled': 'True', 'indirect_selection': 'eager', 'use_experimental_parser': 'False', 'invocation_command': 'dbt show --select fact_flights', 'log_path': 'logs'}
+[0m17:12:48.359017 [error] [MainThread]: [[31mERROR[0m]: Encountered an error:
+Runtime Error
+  No dbt_project.yml found at expected path D:\App\us-aviation-analytics\dbt_project.yml
+  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
+  
+[0m17:12:48.359958 [debug] [MainThread]: Command `dbt show` failed at 17:12:48.359847 after 0.31 seconds
+[0m17:12:48.360272 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001A90AB6E650>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001A90ABB31D0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001A90AC33CE0>]}
+[0m17:12:48.360585 [debug] [MainThread]: Flushing usage events
+[0m17:12:49.826304 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m21:46:56.838222 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001FCFD95E510>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001FCFB2E0E10>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001FC80367890>]}
+
+
+============================== 21:46:56.844387 | 86e0d8c5-d3e0-4cda-af26-50100d7b3a6e ==============================
+[0m21:46:56.844387 [info ] [MainThread]: Running with dbt=1.12.3
+[0m21:46:56.845043 [debug] [MainThread]: running dbt with arguments {'static_parser': 'True', 'no_print': 'None', 'version_check': 'True', 'target_path': 'None', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'maximum_seed_size_mib': '1', 'printer_width': '80', 'write_json': 'True', 'introspect': 'True', 'log_cache_events': 'False', 'empty': 'None', 'cache_selected_only': 'False', 'log_format': 'default', 'debug': 'False', 'fail_fast': 'False', 'profiles_dir': 'C:\\Users\\LENOVO\\.dbt', 'send_anonymous_usage_stats': 'True', 'quiet': 'False', 'warn_error': 'None', 'partial_parse': 'True', 'invocation_command': 'dbt test --select stg_on_time_performance', 'hints_enabled': 'True', 'use_colors': 'True', 'use_experimental_parser': 'False', 'indirect_selection': 'eager', 'log_path': 'logs'}
+[0m21:46:56.845482 [error] [MainThread]: [[31mERROR[0m]: Encountered an error:
+Runtime Error
+  No dbt_project.yml found at expected path D:\App\us-aviation-analytics\dbt_project.yml
+  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
+  
+[0m21:46:56.846274 [debug] [MainThread]: Command `dbt test` failed at 21:46:56.846192 after 0.18 seconds
+[0m21:46:56.846583 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001FC8029E650>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001FC802E71D0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x000001FC80363CE0>]}
+[0m21:46:56.846836 [debug] [MainThread]: Flushing usage events
+[0m21:46:58.178167 [debug] [MainThread]: An error was encountered while trying to flush usage events

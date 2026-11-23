@@ -1,7 +1,5 @@
-# Source Definitions — Raw BigQuery Tables
 
-# Sources mendefinisikan tabel BigQuery yang bukan dibuat oleh dbt.
-# Ini adalah kontrak antara dbt dan raw layer.
+# Source Definitions — Raw BigQuery Tables
 
 version: 2
 
@@ -11,14 +9,20 @@ sources:
       Raw landing zone berisi data BTS (Bureau of Transportation Statistics)
       yang di-upload langsung dari file CSV tanpa transformasi apapun.
       Semua transformasi dimulai dari staging layer.
+
     database: us-aviation-analytics
     schema: raw
 
-    # Freshness check: alert jika data tidak ter-update dalam X hari
-    # Untuk dataset bulanan, warn setelah 35 hari, error setelah 65 hari
-    freshness:
-      warn_after:  {count: 35, period: day}
-      error_after: {count: 65, period: day}
+    # Freshness check
+    # Warning setelah 35 hari, error setelah 65 hari
+    config:
+      freshness:
+        warn_after:
+          count: 35
+          period: day
+        error_after:
+          count: 65
+          period: day
 
     tables:
 
@@ -27,38 +31,56 @@ sources:
         description: >
           BTS Airline On-Time Performance data 2019–2023.
           Grain: satu baris = satu scheduled flight segment.
-          Sumber: https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FGJ
-          Upload: bulanan, ~600K rows per file.
-        loaded_at_field: _loaded_at    # Kolom yang digunakan untuk freshness check
+          Sumber: BTS TranStats.
+          Upload: bulanan, sekitar 600K rows per file.
+
+        config:
+          loaded_at_field: _loaded_at
+
         columns:
-          - name: FlightDate
+          - name: FL_DATE
             description: Tanggal penerbangan (YYYY-MM-DD)
+            data_type: DATE
             tests:
               - not_null
-          - name: Reporting_Airline
-            description: Kode IATA maskapai (2 karakter)
+
+          - name: OP_UNIQUE_CARRIER
+            description: Kode maskapai penerbangan
+            data_type: STRING
             tests:
               - not_null
+
           - name: Origin
             description: Kode IATA bandara asal (3 karakter)
+            data_type: STRING
             tests:
               - not_null
+
           - name: Dest
             description: Kode IATA bandara tujuan (3 karakter)
+            data_type: STRING
             tests:
               - not_null
-          - name: Cancelled
-            description: Flag pembatalan penerbangan (0=operated, 1=cancelled)
+
+          - name: CANCELLED
+            description: Flag pembatalan penerbangan (0.0=operated, 1.0=cancelled)
+            data_type: FLOAT64
             tests:
               - not_null
               - accepted_values:
-                  values: [0, 1]
+                  arguments:
+                    values: [0.0, 1.0]
+                    quote: false
+
           - name: _loaded_at
             description: Timestamp saat baris di-load ke BigQuery
+            data_type: TIMESTAMP
             tests:
               - not_null
+
           - name: _source_file
             description: Nama file CSV sumber
+            data_type: STRING
             tests:
               - not_null
 
@@ -67,11 +89,13 @@ sources:
         description: >
           Lookup table: BTS airline code ke nama maskapai lengkap.
           Tidak memiliki freshness check karena lookup ini jarang berubah.
+
         columns:
           - name: Code
             description: BTS numeric airline code atau IATA code
             tests:
               - not_null
+
           - name: Description
             description: Nama maskapai lengkap
             tests:
@@ -81,12 +105,14 @@ sources:
       - name: airport_lookup
         description: >
           Lookup table: IATA airport code ke nama kota dan bandara.
+
         columns:
           - name: Code
             description: Kode IATA bandara (3 karakter)
             tests:
               - not_null
               - unique
+
           - name: Description
             description: "Format: City, ST: Airport Name"
             tests:
