@@ -38,28 +38,28 @@ dest_airports as (
     from {{ ref('stg_airport_lookup') }}
 ),
 
-delay_calc as (
-    select
-        flight_id,
+    delay_calc as (
+        select
+            flight_id,
 
-        greatest(
-            coalesce(carrier_delay_minutes, 0),
-            coalesce(late_aircraft_delay_minutes, 0),
-            coalesce(nas_delay_minutes, 0),
-            coalesce(weather_delay_minutes, 0),
-            coalesce(security_delay_minutes, 0)
-        ) as max_delay_minutes,
+            greatest(
+                coalesce(carrier_delay_minutes, 0),
+                coalesce(late_aircraft_delay_minutes, 0),
+                coalesce(nas_delay_minutes, 0),
+                coalesce(weather_delay_minutes, 0),
+                coalesce(security_delay_minutes, 0)
+            ) as max_delay_minutes,
 
-        coalesce(
-            carrier_delay_minutes,
-            late_aircraft_delay_minutes,
-            nas_delay_minutes,
-            weather_delay_minutes,
-            security_delay_minutes
-        ) as any_cause_not_null
+            coalesce(
+                carrier_delay_minutes,
+                late_aircraft_delay_minutes,
+                nas_delay_minutes,
+                weather_delay_minutes,
+                security_delay_minutes
+            ) as any_cause_not_null
 
-    from flights
-),
+        from fliaghts
+    ),
 
 hub_flags as (
     select

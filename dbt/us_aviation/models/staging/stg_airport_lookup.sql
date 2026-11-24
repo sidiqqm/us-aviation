@@ -15,7 +15,7 @@ source as (
 renamed as (
 
     select
-        safe_cast(Code as INT64) as airport_id,
+        safe_cast(Code as STRING) as airport_id,
         cast(Description as STRING) as airport_description_full,
 
         trim(

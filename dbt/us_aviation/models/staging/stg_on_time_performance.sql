@@ -49,12 +49,12 @@ renamed as (
         cast(OP_CARRIER_FL_NUM as STRING) as flight_number,
 
         -- Rute
-        cast(ORIGIN_AIRPORT_ID as INT64) as origin_airport_id,
+        cast(ORIGIN_AIRPORT_ID as STRING) as origin_airport_id,
         cast(ORIGIN as STRING) as origin_airport_code,
         cast(ORIGIN_CITY_NAME as STRING) as origin_city_name,
         cast(ORIGIN_STATE_ABR as STRING) as origin_state_code,
 
-        cast(DEST_AIRPORT_ID as INT64) as dest_airport_id,
+        cast(DEST_AIRPORT_ID as STRING) as dest_airport_id,
         cast(DEST as STRING) as dest_airport_code,
         cast(DEST_CITY_NAME as STRING) as dest_city_name,
         cast(DEST_STATE_ABR as STRING) as dest_state_code,
