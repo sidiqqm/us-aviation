@@ -71,7 +71,6 @@ calendar_spine as (
         r.route_distance_category,
 
         month_start
-
     from route_universe r
 
     cross join unnest(

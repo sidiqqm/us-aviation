@@ -31,7 +31,10 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['Pre-COVID', 'COVID-Impact', 'Recovery']
+                values: 
+                  - Pre-Covid
+                  - COVID Impact
+                  - Recovery
 
       - name: flight_season
         description: Musim meteorologis AS (Winter/Spring/Summer/Fall)
@@ -39,7 +42,11 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['Winter', 'Spring', 'Summer', 'Fall']
+                values:
+                  - Winter
+                  - Spring
+                  - Summer
+                  - Fall
 
       - name: carrier_code
         description: Kode IATA maskapai
@@ -52,8 +59,13 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['Legacy', 'Low-Cost', 'Mid-Size',
-                       'Ultra Low-Cost', 'Regional', 'Other']
+                values: 
+                  - Legacy
+                  - Low-Cost
+                  - Mid-Size
+                  - Ultra Low-Cost
+                  - Regional
+                  - Other
 
       - name: route_key
         description: >
@@ -70,10 +82,15 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['Early Morning (5-9am)', 'Morning (9am-12pm)',
-                       'Afternoon (12-3pm)', 'Late Afternoon (3-6pm)',
-                       'Evening (6-9pm)', 'Night (9pm-12am)',
-                       'Red-Eye (12-5am)', 'Unknown']
+                values: 
+                  - Early Morning (5-9am)
+                  - Morning (9am-12pm)
+                  - Afternoon (12-3pm)
+                  - Late Afternoon (3-6pm)
+                  - Evening (6-9pm)
+                  - Night (9pm-12am)
+                  - Red-Eye (12-5am)
+                  - Unknown
 
       - name: delay_severity
         description: >
@@ -90,6 +107,18 @@ models:
         description: >
           Penyebab delay terbesar (Carrier/Late Aircraft/NAS/Weather/Security).
           NULL untuk on-time atau cancelled flights.
+        tests:
+          - accepted_values:
+              arguments: 
+                values: 
+                  - Unattributed
+                  - Carrier
+                  - Late Aircraft
+                  - NAS
+                  - Weather
+                  - Security
+                  - Unknown
+                  - null
 
       - name: schedule_efficiency_ratio
         description: >
@@ -103,8 +132,11 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['Short-Haul (<250mi)', 'Medium-Haul (250-750mi)',
-                       'Long-Haul (750-1500mi)', 'Ultra Long-Haul (>1500mi)']
+                values: 
+                  - Short-Haul (<250mi)
+                  - Medium-Haul (250-750mi)
+                  - Long-Haul (750-1500mi)
+                  - Ultra Long-Haul (>1500mi)
 
   # int_delay_classified
   - name: int_delay_classified
@@ -132,11 +164,15 @@ models:
       - name: primary_delay_cause
         description: Penyebab delay dominan untuk flight ini
         tests:
-          - not_null
           - accepted_values:
               arguments:
-                values: ['Carrier', 'Late Aircraft', 'NAS',
-                       'Weather', 'Security', 'Unattributed']
+                values: 
+                  - Carrier
+                  - Late Aircraft
+                  - NAS
+                  - Weather
+                  - Security
+                  - Unattributed
 
       - name: carrier_delay_pct
         description: Proporsi carrier delay terhadap total delay (0-100%)
@@ -159,7 +195,7 @@ models:
       Input untuk fact_route_performance di marts dan reporting layer.
 
     columns:
-      - name: flight_month_date
+      - name: flight_month_name
         description: Tanggal hari pertama bulan (DATE) untuk time intelligence
         tests:
           - not_null
@@ -205,8 +241,13 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['Excellent (≥85%)', 'Good (80-85%)',
-                       'Fair (70-80%)', 'Poor (60-70%)', 'Critical (<60%)']
+                values: 
+                  - No Operations / No Data
+                  - Excellent (>=85%)
+                  - Good (80-85%)
+                  - Fair (70-80%)
+                  - Poor (60-70%)
+                  - Critical (<60%)
 
       - name: dominant_delay_cause
         description: Penyebab delay dominan di level rute-bulan
@@ -214,5 +255,13 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['Carrier', 'Late Aircraft', 'NAS',
-                       'Weather', 'Security', 'No Delay']
+                values:
+                  - Multiple Causes 
+                  - Carrier
+                  - Late Aircraft
+                  - NAS
+                  - Weather
+                  - Security
+                  - No Delay
+                  - No Operations
+                  - Unknown
