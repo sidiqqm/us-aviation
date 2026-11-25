@@ -1,17 +1,15 @@
+
 with delayed_flights as (
-    select *
+
+    select
+        *
     from {{ ref('int_flights_enriched') }}
     where is_arr_delayed = true
-        and coalesce(
-            carrier_delay_minutes,
-            late_aircraft_delay_minutes,
-            nas_delay_minutes,
-            weather_delay_minutes,
-            security_delay_minutes
-        ) is not null
+
 ),
 
 classified as (
+
     select
         flight_id,
         flight_date,
@@ -26,7 +24,6 @@ classified as (
         is_covid_period,
 
         carrier_code,
-        airline_name_short,
         carrier_type,
         origin_airport_code,
         dest_airport_code,
@@ -36,8 +33,6 @@ classified as (
         dep_time_of_day,
         is_weekend,
         route_distance_category,
-        origin_is_major_hub,
-        dest_is_major_hub,
 
         arr_delay_minutes,
         arr_delay_minutes_pos,
@@ -47,92 +42,94 @@ classified as (
         primary_delay_cause,
 
         -- Delay cause
-        coalesce(carrier_delay_minutes, 0) as carrier_delay_minutes,
-        coalesce(weather_delay_minutes, 0) as weather_delay_minutes,
-        coalesce(nas_delay_minutes, 0) as nas_delay_minutes,
-        coalesce(security_delay_minutes, 0) as security_delay_minutes,
-        coalesce(late_aircraft_delay_minutes, 0) as late_aircraft_delay_minutes,
+        coalesce(carrier_delay_minutes, 0)
+            as carrier_delay_minutes,
 
-        -- Delay Cause percentage
+        coalesce(weather_delay_minutes, 0)
+            as weather_delay_minutes,
+
+        coalesce(nas_delay_minutes, 0)
+            as nas_delay_minutes,
+
+        coalesce(security_delay_minutes, 0)
+            as security_delay_minutes,
+
+        coalesce(late_aircraft_delay_minutes, 0)
+            as late_aircraft_delay_minutes,
+
+        -- Delay cause percentage
         round(
-            {{safe_divide(
+            {{ safe_divide(
                 'coalesce(carrier_delay_minutes, 0)',
                 'total_cause_minutes'
-            )}} * 100, 2
+            ) }} * 100, 2
         ) as carrier_delay_pct,
 
         round(
-            {{
-                safe_divide(
-                    'coalesce(weather_delay_minutes, 0)',
-                    'total_cause_minutes'
-                )
-            }} * 100, 2
+            {{ safe_divide(
+                'coalesce(weather_delay_minutes, 0)',
+                'total_cause_minutes'
+            ) }} * 100, 2
         ) as weather_delay_pct,
 
         round(
-            {{
-                safe_divide(
-                    'coalesce(nas_delay_minutes, 0)',
-                    'total_cause_minutes'
-                )
-            }} * 100, 2
+            {{ safe_divide(
+                'coalesce(nas_delay_minutes, 0)',
+                'total_cause_minutes'
+            ) }} * 100, 2
         ) as nas_delay_pct,
 
         round(
-            {{
-                safe_divide(
-                    'coalesce(security_delay_minutes, 0)',
-                    'total_cause_minutes'
-                )
-            }} * 100, 2
+            {{ safe_divide(
+                'coalesce(security_delay_minutes, 0)',
+                'total_cause_minutes'
+            ) }} * 100, 2
         ) as security_delay_pct,
 
         round(
-            {{
-                safe_divide(
-                    'coalesce(late_aircraft_delay_minutes, 0)',
-                    'total_cause_minutes'
-                )
-            }} * 100, 2
+            {{ safe_divide(
+                'coalesce(late_aircraft_delay_minutes, 0)',
+                'total_cause_minutes'
+            ) }} * 100, 2
         ) as late_aircraft_delay_pct,
 
-        -- Delay Cause Flags
-        case
-            when arr_delay_minutes_pos is null or arr_delay_minutes_pos = 0 then null
-            when coalesce(carrier_delay_minutes, 0) > (arr_delay_minutes_pos * 0.5) then true
-            else false
-        end as carrier_is_dominant,
+        -- Majority cause (>50% of total cause minutes)
+        coalesce(carrier_delay_minutes, 0)
+            > total_cause_minutes * 0.5
+            as carrier_is_majority,
 
-        case
-            when arr_delay_minutes_pos is null or arr_delay_minutes_pos = 0 then null
-            when coalesce(weather_delay_minutes, 0) > (arr_delay_minutes_pos * 0.5) then true
-            else false
-        end as weather_is_dominant,
+        coalesce(weather_delay_minutes, 0)
+            > total_cause_minutes * 0.5
+            as weather_is_majority,
 
-        case
-            when arr_delay_minutes_pos is null or arr_delay_minutes_pos = 0 then null
-            when coalesce(nas_delay_minutes, 0) > (arr_delay_minutes_pos * 0.5) then true
-            else false
-        end as nas_is_dominant,
+        coalesce(nas_delay_minutes, 0)
+            > total_cause_minutes * 0.5
+            as nas_is_majority,
 
-        case
-            when arr_delay_minutes_pos is null or arr_delay_minutes_pos = 0 then null
-            when coalesce(security_delay_minutes, 0) > (arr_delay_minutes_pos * 0.5) then true
-            else false
-        end as security_is_dominant,
+        coalesce(security_delay_minutes, 0)
+            > total_cause_minutes * 0.5
+            as security_is_majority,
 
-        case
-            when arr_delay_minutes_pos is null or arr_delay_minutes_pos = 0 then null
-            when coalesce(late_aircraft_delay_minutes, 0) > (arr_delay_minutes_pos * 0.5) then true
-            else false
-        end as late_aircraft_is_dominant,
+        coalesce(late_aircraft_delay_minutes, 0)
+            > total_cause_minutes * 0.5
+            as late_aircraft_is_majority,
 
+        -- Delay duration flags
         arr_delay_minutes_pos > 60 as is_over_1_hour,
         arr_delay_minutes_pos > 120 as is_over_2_hours,
         arr_delay_minutes_pos > 240 as is_over_4_hours,
 
-        coalesce(late_aircraft_delay_minutes, 0) > 15 as is_cascade_delay,
+        case
+            when arr_delay_minutes_pos is null then 'unknown'
+            when arr_delay_minutes_pos <= 60 then 'under_1_hour'
+            when arr_delay_minutes_pos <= 120 then '1_to_2_hours'
+            when arr_delay_minutes_pos <= 240 then '2_to_4_hours'
+            else 'over_4_hours'
+        end as delay_duration_category,
+
+        -- Cascade delay
+        coalesce(late_aircraft_delay_minutes, 0) > 15
+            as is_cascade_delay,
 
         loaded_at,
         source_file
@@ -141,4 +138,5 @@ classified as (
 
 )
 
-select * from classified
+select *
+from classified

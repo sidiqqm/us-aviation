@@ -1,66 +1,89 @@
+
 -- YANG DIKERJAKAN:
 --   1. Enrich flight data dengan nama maskapai dan bandara
 --   2. Tambahkan business context flags (COVID period, season, dst)
 --   3. Tambahkan delay severity categorization
 --   4. Tambahkan time-of-day dan schedule attributes
 
-with flights as (
+with
+
+flights as (
     select * from {{ ref('stg_on_time_performance') }}
 ),
 
+-- Lookup maskapai
 airlines as (
-    select * from {{ ref("stg_airline_lookup") }}
+    select * from {{ ref('stg_airline_lookup') }}
 ),
 
+-- Lookup bandara asal
 origin_airports as (
     select
-        airport_id as origin_airport_id,
-        city_name as origin_city,
-        state_code,
-        airport_name as origin_airport_name,
-        airport_description_full as origin_airport_description_full
-    from {{ ref("stg_airport_lookup") }}
+        airport_code,
+        airport_name,
+        city_name as origin_city_name_clean,
+        state_code as origin_state_code_clean,
+        is_major_hub as origin_is_major_hub
+    from {{ ref('stg_airport_lookup') }}
 ),
 
+-- Lookup bandara tujuan
 dest_airports as (
     select
-        airport_id as dest_airport_id,
-        city_name as dest_city,
-        state_code,
-        airport_name as dest_airport_name,
-        airport_description_full as dest_airport_description_full
-    from {{ ref("stg_airport_lookup") }}
+        airport_code,
+        airport_name,
+        city_name as dest_city_name_clean,
+        state_code as dest_state_code_clean,
+        is_major_hub as dest_is_major_hub
+    from {{ ref('stg_airport_lookup') }}
 ),
 
--- hitung delay
-delay_calc as (
-    select
-        flight_id,
-        greatest(
-            coalesce(carrier_delay_minutes, 0),
-            coalesce(late_aircraft_delay_minutes, 0),
-            coalesce(nas_delay_minutes, 0),
-            coalesce(weather_delay_minutes, 0),
-            coalesce(security_delay_minutes, 0)
-        ) as max_delay_minutes,
+    delay_calc as (
+        select
+            flight_id,
 
-        (
-            carrier_delay_minutes is not null
-            or late_aircraft_delay_minutes is not null
-            or nas_delay_minutes is not null
-            or weather_delay_minutes is not null
-            or security_delay_minutes is not null
-        ) as has_cause_data
-    from flights
+            greatest(
+                coalesce(carrier_delay_minutes, 0),
+                coalesce(late_aircraft_delay_minutes, 0),
+                coalesce(nas_delay_minutes, 0),
+                coalesce(weather_delay_minutes, 0),
+                coalesce(security_delay_minutes, 0)
+            ) as max_delay_minutes,
+
+            coalesce(
+                carrier_delay_minutes,
+                late_aircraft_delay_minutes,
+                nas_delay_minutes,
+                weather_delay_minutes,
+                security_delay_minutes
+            ) as any_cause_not_null
+
+        from fliaghts
+    ),
+
+hub_flags as (
+    select
+        f.flight_id,
+        coalesce(oa.origin_is_major_hub, false) as origin_is_major_hub,
+        coalesce(da.dest_is_major_hub, false) as dest_is_major_hub
+    from flights f
+    left join origin_airports oa
+        on f.origin_airport_code = oa.airport_code
+    left join dest_airports da
+        on f.dest_airport_code = da.airport_code
 ),
 
 enriched as (
+
     select
+
         f.flight_id,
+
+        -- Dimensi Waktu
         f.flight_date,
-        f.flight_month,
-        f.flight_quarter,
         f.flight_year,
+        f.flight_quarter,
+        f.flight_month,
         f.flight_day_of_month,
         f.flight_day_of_week,
         f.day_of_week_name,
@@ -81,46 +104,80 @@ enriched as (
         end as flight_month_name,
 
         case
-            when f.flight_month in (12, 1, 2) then "Winter"
-            when f.flight_month in (3, 4, 5) then "Spring"
-            when f.flight_month in (6, 7, 8) then "Summer"
-            when f.flight_month in (9, 10, 11) then "Fall"
+            when f.flight_month in (12, 1, 2) then 'Winter'
+            when f.flight_month in (3, 4, 5) then 'Spring'
+            when f.flight_month in (6, 7, 8) then 'Summer'
+            when f.flight_month in (9, 10, 11) then 'Fall'
         end as flight_season,
 
         case
-            when f.flight_date < '2020-03-01' then 'Pre-Covid'
-            when f.flight_date < '2022-01-01' then 'COVID Impact'
+            when f.flight_date < '2020-03-01' then 'Pre-COVID'
+            when f.flight_date < '2022-01-01' then 'COVID-Impact'
             else 'Recovery'
         end as covid_period,
 
         f.flight_date >= '2020-03-01'
             and f.flight_date < '2022-01-01' as is_covid_period,
 
-        -- airline
+        -- Maskapai
         f.carrier_code,
-        al.airline_name_full,
+        coalesce(
+            al.airline_name_full,
+            f.carrier_code
+        ) as airline_name_full,
+        coalesce(
+            al.airline_name_short,
+            f.carrier_code
+        ) as airline_name_short,
+        coalesce(
+            al.carrier_type,
+            'Other'
+        ) as carrier_type,
+
         f.tail_number,
         f.flight_number,
 
-        -- origin airport
+        -- Bandara Asal
         f.origin_airport_id,
         f.origin_airport_code,
-        oa.origin_airport_name,
         f.origin_city_name,
-        oa.origin_airport_description_full,
-        f.origin_state_code,
+        coalesce(
+            oa.origin_city_name_clean,
+            f.origin_city_name
+        ) as origin_city_name_clean,
+        coalesce(
+            oa.origin_state_code_clean,
+            f.origin_state_code
+        ) as origin_state_code,
+        coalesce(
+            oa.airport_name,
+            f.origin_airport_code
+        ) as origin_airport_name,
+        hf.origin_is_major_hub,                 
 
-        -- destincation airport
+        -- Bandara Tujuan
+        f.dest_airport_id,
         f.dest_airport_code,
-        f.dest_airport_code,
-        da.dest_airport_name,
         f.dest_city_name,
-        da.dest_airport_description_full,
-        f.dest_state_code,
+        coalesce(
+            da.dest_city_name_clean,
+            f.dest_city_name
+        ) as dest_city_name_clean,
+        coalesce(
+            da.dest_state_code_clean,
+            f.dest_state_code
+        ) as dest_state_code,
+        coalesce(
+            da.airport_name,
+            f.dest_airport_code
+        ) as dest_airport_name,
+        hf.dest_is_major_hub,                   
 
         concat(f.origin_airport_code, '-', f.dest_airport_code) as route_key,
-        
-        -- Waktu Berangkat & Mendarat
+
+        hf.origin_is_major_hub and hf.dest_is_major_hub as is_hub_to_hub_route,
+
+        -- Keberangkatan & Kedatangan
         f.scheduled_dep_time_hhmm,
         f.actual_dep_time_hhmm,
         f.scheduled_arr_time_hhmm,
@@ -187,29 +244,22 @@ enriched as (
         f.total_cause_minutes,
 
         case
-            when not dc.has_cause_data then null
-
+            when dc.any_cause_not_null is null then null
             when dc.max_delay_minutes = 0 then 'Unattributed'
-
-            when f.carrier_delay_minutes = dc.max_delay_minutes
-                then 'Carrier'
-
-            when f.late_aircraft_delay_minutes = dc.max_delay_minutes
-                then 'Late Aircraft'
-
-            when f.nas_delay_minutes = dc.max_delay_minutes
-                then 'NAS'
-
-            when f.weather_delay_minutes = dc.max_delay_minutes
-                then 'Weather'
-
-            when f.security_delay_minutes = dc.max_delay_minutes
-                then 'Security'
-
+            when f.carrier_delay_minutes
+                 = dc.max_delay_minutes then 'Carrier'
+            when f.late_aircraft_delay_minutes
+                 = dc.max_delay_minutes then 'Late Aircraft'
+            when f.nas_delay_minutes
+                 = dc.max_delay_minutes then 'NAS'
+            when f.weather_delay_minutes
+                 = dc.max_delay_minutes then 'Weather'
+            when f.security_delay_minutes
+                 = dc.max_delay_minutes then 'Security'
             else 'Unknown'
         end as primary_delay_cause,
 
-            -- Durasi & Jarak
+        -- Durasi & Jarak
         f.scheduled_elapsed_minutes,
         f.actual_elapsed_minutes,
         f.air_time_minutes,
@@ -220,7 +270,6 @@ enriched as (
         {{ safe_divide('f.actual_elapsed_minutes', 'f.scheduled_elapsed_minutes') }} as schedule_efficiency_ratio,
 
         case
-            when f.distance_miles is null then null
             when f.distance_miles < 250 then 'Short-Haul (<250mi)'
             when f.distance_miles < 750 then 'Medium-Haul (250-750mi)'
             when f.distance_miles < 1500 then 'Long-Haul (750-1500mi)'
@@ -237,15 +286,17 @@ enriched as (
         on f.carrier_code = al.carrier_code
 
     left join origin_airports oa
-        on f.origin_airport_id = oa.origin_airport_id
-    
+        on f.origin_airport_code = oa.airport_code
+
     left join dest_airports da
-        on f.dest_airport_id = da.dest_airport_id
+        on f.dest_airport_code = da.airport_code
 
     left join delay_calc dc
         on f.flight_id = dc.flight_id
+
+    left join hub_flags hf
+        on f.flight_id = hf.flight_id
+
 )
 
 select * from enriched
-
-
