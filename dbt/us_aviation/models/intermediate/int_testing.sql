@@ -1,8 +1,6 @@
 with testing as (
-    select
-        *
-    from {{ ref("stg_airport_lookup") }}
-    where airport_id = '10397'
+    select *
+    from {{ ref("stg_on_time_performance") }}
 )
 
 select * from testing

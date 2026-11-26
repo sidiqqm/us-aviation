@@ -35,6 +35,7 @@ enriched as (
         left(format_date("%A", date_day), 3) as day_of_week_name_short,
 
         extract(dayofweek from date_day) in (1, 7) as is_weekend,
+        extract(dayofweek from date_day) not in (1, 7) as is_weekday,
 
         case
             when extract(month from date_day) in (12, 1, 2) then 'Winter'
@@ -77,17 +78,26 @@ enriched as (
         ) as is_federal_holiday,
 
         case
-            when date_day < '2020-03-01' then 'Pre-COVID'
-            when date_day < '2022-01-01' then 'COVID-Impact'
+            when date_day < '2020-03-01' then 'Pre-Covid'
+            when date_day < '2022-01-01' then 'COVID Impact'
             else 'Recovery'
         end as covid_period,
 
         date_trunc(date_day, month) as first_day_of_month,
+        last_day(d.date_day, month) as last_day_of_month,
+
         date_trunc(date_day, quarter) as first_day_of_quarter,
         date_trunc(date_day, year) as first_day_of_year,
 
+        extract(isoyear from d.date_day) as isoyear,
         extract(isoweek from date_day) as isoweek,
-        extract(dayofyear from date_day) as day_of_year
+        extract(dayofyear from date_day) as day_of_year,
+
+        d.date_day = date_trunc(d.date_day, month) as is_month_start,
+
+        d.date_day = last_day(d.date_day, month) as is_month_end,
+
+        current_timestamp() as dw_loaded_at
     
     from spine_typed
 
