@@ -13,11 +13,15 @@ models:
     columns:
       - name: date_key
         description: PK — Format YYYYMMDD integer (e.g. 20190315)
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
         
       - name: full_date
         description: Tanggal dalam format DATE
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
         
       - name: year
         description: Tahun (2019–2023)
@@ -31,6 +35,7 @@ models:
                   - 2021
                   - 2022
                   - 2023
+                quote: false
                   
       - name: season
         description: Musim meteorologis AS
@@ -51,17 +56,19 @@ models:
           - accepted_values:
               arguments:
                 values:
-                  - Pre-COVID
+                  - Pre-Covid
                   - COVID Impact
                   - Recovery
 
       - name: is_weekend
         description: True jika Sabtu atau Minggu
-        tests: [not_null]
+        tests: 
+          - not_null
 
       - name: is_federal_holiday
         description: True jika US Federal Holiday utama
-        tests: [not_null]
+        tests: 
+          - not_null
 
   - name: dim_carrier
     description: >
@@ -74,11 +81,15 @@ models:
     columns:
       - name: carrier_id
         description: PK — MD5 surrogate key dari carrier_code
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
         
       - name: carrier_code
         description: NK — Kode IATA maskapai (2 karakter)
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
         
       - name: carrier_type
         description: Kategori model bisnis maskapai
@@ -96,15 +107,18 @@ models:
 
       - name: is_big4_carrier
         description: True jika AA, DL, UA, atau WN
-        tests: [not_null]
+        tests: 
+          - not_null
         
       - name: is_major_carrier
         description: Maskapai besar
-        tests: [not_null]
+        tests: 
+          - not_null
         
       - name: dw_last_refreshed_at
         description: Timestamp terakhir model di-refresh
-        tests: [not_null]
+        tests: 
+          - not_null
 
   - name: dim_airport
     description: >
@@ -116,15 +130,20 @@ models:
     columns:
       - name: airport_id
         description: PK — MD5 surrogate key dari airport_code
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
 
       - name: airport_code
         description: NK — Kode IATA 3 karakter
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
 
       - name: is_major_hub
         description: True jika termasuk 30 bandara tersibuk AS
-        tests: [not_null]
+        tests: 
+          - not_null
 
       - name: us_region
         description: Region geografis AS
@@ -141,7 +160,8 @@ models:
 
       - name: loaded_at
         description: Timestamp terakhir model di-refresh
-        tests: [not_null]
+        tests: 
+          - not_null
 
   - name: dim_route
     description: >
@@ -155,11 +175,15 @@ models:
     columns:
       - name: route_id
         description: PK — MD5 surrogate key dari route_key
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
         
       - name: route_key
         description: NK — Format ORIGIN-DEST (e.g. ATL-LAX)
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
         
       - name: is_interstate_route
         description: >
@@ -181,7 +205,8 @@ models:
                        
       - name: dw_last_refreshed_at
         description: Timestamp terakhir model di-refresh
-        tests: [not_null]
+        tests: 
+          - not_null
 
   - name: dim_delay_cause
     description: >
@@ -193,25 +218,33 @@ models:
     columns:
       - name: delay_cause_id
         description: PK — Integer 1–6
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
         
       - name: delay_cause_code
         description: >
           Kode singkat: carrier, weather, nas, security,
           late_aircraft, unattributed
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
         
       - name: delay_cause_name
         description: >
           Internal (maskapai bisa kontrol) vs External vs Unknown.
           Unknown hanya untuk row Unattributed.
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
               
       - name: fact_column_name
         description: >
           True jika maskapai dapat mengurangi cause ini.
           NULL untuk Unattributed (controllability tidak bisa ditentukan).
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
 
 
   # FACT TABLES
@@ -229,11 +262,15 @@ models:
     
       - name: flight_id
         description: PK — Surrogate key dari staging (MD5 hash)
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
 
       - name: flight_date_key
         description: FK ke dim_date.date_key
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
 
       - name: carrier_id
         description: FK ke dim_carrier.carrier_id
@@ -373,4 +410,5 @@ models:
 
       - name: dw_last_refreshed_at
         description: Timestamp terakhir model di-refresh
-        tests: [not_null]
+        tests: 
+          - not_null

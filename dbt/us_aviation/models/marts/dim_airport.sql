@@ -65,4 +65,4 @@ final as (
     from joined
 )
 
-select * from enriched
+select * from final

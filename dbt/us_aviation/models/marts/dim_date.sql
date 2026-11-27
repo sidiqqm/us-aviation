@@ -84,23 +84,22 @@ enriched as (
         end as covid_period,
 
         date_trunc(date_day, month) as first_day_of_month,
-        last_day(d.date_day, month) as last_day_of_month,
+        last_day(date_day, month) as last_day_of_month,
 
         date_trunc(date_day, quarter) as first_day_of_quarter,
         date_trunc(date_day, year) as first_day_of_year,
 
-        extract(isoyear from d.date_day) as isoyear,
+        extract(isoyear from date_day) as isoyear,
         extract(isoweek from date_day) as isoweek,
         extract(dayofyear from date_day) as day_of_year,
 
-        d.date_day = date_trunc(d.date_day, month) as is_month_start,
+        date_day = date_trunc(date_day, month) as is_month_start,
 
-        d.date_day = last_day(d.date_day, month) as is_month_end,
+        date_day = last_day(date_day, month) as is_month_end,
 
         current_timestamp() as dw_loaded_at
     
     from spine_typed
-
 )
 
 select * from enriched
