@@ -44,7 +44,7 @@ enriched as (
         route_distance_category,
         route_distance_miles,
 
-        current_timestamp() as dw_loaded_at
+        current_timestamp() as dw_last_refreshed_at
 
     from route_base
 

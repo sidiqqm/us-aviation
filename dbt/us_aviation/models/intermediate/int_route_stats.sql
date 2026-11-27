@@ -21,6 +21,8 @@ route_universe as (
         carrier_code,
         carrier_type,
         route_key,
+        origin_airport_id,
+        dest_airport_id,
         origin_airport_code,
         dest_airport_code,
         origin_state_code,
@@ -36,6 +38,8 @@ route_universe as (
         carrier_code,
         carrier_type,
         route_key,
+        origin_airport_id,
+        dest_airport_id,
         origin_airport_code,
         dest_airport_code,
         origin_state_code,
@@ -64,6 +68,8 @@ calendar_spine as (
         r.carrier_code,
         r.carrier_type,
         r.route_key,
+        r.origin_airport_id,
+        r.dest_airport_id,
         r.origin_airport_code,
         r.dest_airport_code,
         r.origin_state_code,
@@ -91,6 +97,8 @@ monthly_route as (
         carrier_code,
         carrier_type,
         route_key,
+        origin_airport_id,
+        dest_airport_id,
         origin_airport_code,
         dest_airport_code,
         origin_state_code,
@@ -167,6 +175,8 @@ monthly_route as (
         carrier_code,
         carrier_type,
         route_key,
+        origin_airport_id,
+        dest_airport_id,
         origin_airport_code,
         dest_airport_code,
         origin_state_code,
@@ -197,6 +207,8 @@ spine_monthly as (
         s.carrier_code,
         s.carrier_type,
         s.route_key,
+        s.origin_airport_id,
+        s.dest_airport_id,
         s.origin_airport_code,
         s.dest_airport_code,
         s.origin_state_code,
@@ -429,5 +441,4 @@ final as (
 
 )
 
-select *
-from final
+select * from final
