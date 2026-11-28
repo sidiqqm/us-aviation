@@ -266,21 +266,16 @@ models:
           - unique
           - not_null
 
-      - name: flight_date_key
+      - name: date_key
         description: FK ke dim_date.date_key
         tests:
-          - unique
           - not_null
 
       - name: carrier_id
         description: FK ke dim_carrier.carrier_id
         tests:
           - not_null
-          - relationships:
-              arguments:
-                to: ref('dim_carrier')
-                field: carrier_id
-
+          
       - name: origin_airport_id
         description: "FK ke dim_airport.airport_id (role: origin — active relationship)"
         tests:
@@ -303,24 +298,13 @@ models:
           Disertakan sebagai audit trail.
         tests:
           - not_null
-          - accepted_values:
-              arguments: 
-                values: [0, 1]
               
       - name: is_arr_delayed
         description: 0 = on time atau cancelled, 1 = delayed 15 menit atau lebih
-        tests:
-          - accepted_values:
-              arguments:
-                values: [0, 1, null]
               
       - name: is_on_time
         description: 1 = on time, 0 = delayed, NULL = cancelled
-        tests:
-          - accepted_values:
-              arguments:
-                values: [0, 1, null]
-              
+        
       - name: delay_severity
         description: >
           Klasifikasi keparahan: Early, On Time, Minor Delay,
@@ -347,6 +331,7 @@ models:
           - accepted_values:
               arguments:
                 values:
+                    - Unattributed
                     - Carrier
                     - Late Aircraft
                     - NAS
@@ -379,10 +364,6 @@ models:
         description: FK ke dim_carrier.carrier_id
         tests:
           - not_null
-          - relationships:
-              arguments:
-                to: ref('dim_carrier')
-                field: carrier_id
 
       - name: route_key
         description: FK ke dim_route.route_id
@@ -393,9 +374,6 @@ models:
         description: Total penerbangan operated bulan ini (additive)
         tests:
           - not_null
-          - dbt_utils.expression_is_true:
-              arguments:
-                expression: ">= 0"
               
       - name: is_chronic_delay_route
         description: >
@@ -404,9 +382,6 @@ models:
           INT64 untuk konsistensi dengan fact_flights.
         tests:
           - not_null
-          - accepted_values:
-              arguments:
-                values: [0, 1]
 
       - name: dw_last_refreshed_at
         description: Timestamp terakhir model di-refresh

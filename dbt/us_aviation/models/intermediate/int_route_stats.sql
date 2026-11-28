@@ -18,6 +18,7 @@ with flights as (
 route_universe as (
 
     select
+        carrier_id,
         carrier_code,
         carrier_type,
         route_key,
@@ -35,6 +36,7 @@ route_universe as (
     from flights
 
     group by
+        carrier_id,
         carrier_code,
         carrier_type,
         route_key,
@@ -65,6 +67,7 @@ calendar_month_attributes as (
 calendar_spine as (
 
     select
+        r.carrier_id,
         r.carrier_code,
         r.carrier_type,
         r.route_key,
@@ -94,6 +97,7 @@ monthly_route as (
     select
         date_trunc(flight_date, month) as month_start,
 
+        carrier_id,
         carrier_code,
         carrier_type,
         route_key,
@@ -172,6 +176,7 @@ monthly_route as (
 
     group by
         month_start,
+        carrier_id,
         carrier_code,
         carrier_type,
         route_key,
@@ -189,6 +194,7 @@ spine_monthly as (
 
     select
         -- Calendar attributes
+        cast(format_date('%Y%m%d', s.month_start) as INT64) as flight_date_key,
         extract(year from s.month_start) as flight_year,
         extract(month from s.month_start) as flight_month,
 
@@ -204,6 +210,7 @@ spine_monthly as (
         a.covid_period,
 
         -- Route dimensions
+        s.carrier_id,
         s.carrier_code,
         s.carrier_type,
         s.route_key,

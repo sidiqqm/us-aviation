@@ -58,6 +58,7 @@ enriched as (
     select
         f.flight_id,
         f.flight_date,
+        cast(format_date('%Y%m%d', f.flight_date) as INT64) as date_key,
         f.flight_month,
         f.flight_quarter,
         f.flight_year,
@@ -98,6 +99,7 @@ enriched as (
 
         -- airline
         f.carrier_code,
+        al.carrier_id,
         al.airline_name_full,
         f.tail_number,
         coalesce(al.carrier_type, "Other") as carrier_type,
